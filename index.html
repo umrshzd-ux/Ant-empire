@@ -205,6 +205,7 @@
 <div id="ascension-shop-panel"><div style="color:#ffaa00;font-weight:700;text-align:center;">⬆️ Ascension Shop</div><div id="ascension-shop-list"></div></div>
 <div id="achievements-panel"><div style="color:#ffd27a;font-weight:700;text-align:center;">🏆 Achievements</div><div id="ach-list"></div></div>
 
+<!-- All game scripts -->
 <script src="js/three.min.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/config.js"></script>
@@ -221,44 +222,77 @@
 <script src="js/upgrades.js"></script>
 <script src="js/main.js"></script>
 
+<!-- Bootstrap – no reliance on a single startGame() -->
 <script>
-  // Game bootstrap – runs after all scripts are loaded
-  (function(){
+  (function() {
     var ld = document.getElementById('loading');
     var bar = document.getElementById('progress-fill');
     var msg = document.getElementById('loading-msg');
-    
-    if (typeof THREE === 'undefined') {
-      ld.innerHTML = '<div class="title">⚠️ Failed to load</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;">Three.js could not be loaded.<br>Check that js/three.min.js exists and your internet works.</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer;">Retry</button>';
-      return;
+
+    function showError(text) {
+      if (ld) {
+        ld.style.display = 'flex';
+        ld.innerHTML = '<div class="title">⚠️ Startup Error</div>' +
+          '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:13px;">' +
+          text + '</div>' +
+          '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer;">Retry</button>';
+      }
     }
-    
-    if (typeof startGame !== 'function') {
-      ld.innerHTML = '<div class="title">⚠️ Startup Error</div>'+
-        '<div style="color:#ffaaaa;">startGame is not defined. Check js/main.js</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer;">Retry</button>';
-      return;
+
+    // Check that all required functions exist
+    var required = [
+      { name: 'GameSettings', obj: window.GameSettings },
+      { name: 'AudioManager', obj: window.AudioManager },
+      { name: 'SaveManager', obj: window.SaveManager },
+      { name: 'loadGameData', obj: typeof loadGameData },
+      { name: 'hideMainMenu', obj: typeof hideMainMenu },
+      { name: 'initGameSystems', obj: typeof initGameSystems },
+      { name: 'startGameLoop', obj: typeof startGameLoop },
+      { name: 'showMainMenu', obj: typeof showMainMenu }
+    ];
+
+    for (var i = 0; i < required.length; i++) {
+      var r = required[i];
+      if (r.obj === undefined || (typeof r.obj === 'function' && r.obj === 'undefined')) {
+        showError('Missing: ' + r.name + '<br>Check that all js/ files are loaded correctly.');
+        return;
+      }
     }
-    
-    // Update loading bar to full
-    if (msg) msg.textContent = 'Starting...';
-    if (bar) bar.style.width = '100%';
-    
-    // Hide loading screen and start the game
+
+    // Proceed with startup
     try {
-      if (ld) ld.style.display = 'none';
-      startGame();
+      GameSettings.init();
+      AudioManager.init();
     } catch(e) {
-      if (ld) ld.style.display = 'flex';
-      ld.innerHTML = '<div class="title">⚠️ Startup Error</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px;">'+
-        e.toString()+'<br>Check console for details.'+
-        '</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer;">Retry</button>';
+      showError(e.toString());
+      return;
     }
+
+    var lastSlot = SaveManager.getLastSlot();
+    try {
+      if (lastSlot >= 0) {
+        var data = SaveManager.loadGame(lastSlot);
+        if (data) {
+          currentSlot = lastSlot;
+          loadGameData(data);
+          hideMainMenu();
+          initGameSystems();
+          startGameLoop();
+        } else {
+          showMainMenu();
+        }
+      } else {
+        showMainMenu();
+      }
+    } catch(e) {
+      showError(e.toString());
+    }
+
+    // Hide loading screen
+    if (ld) ld.style.display = 'none';
+    if (bar) bar.style.width = '100%';
+    if (msg) msg.textContent = 'Started!';
   })();
 </script>
 </body>
-  </html>
+</html>
