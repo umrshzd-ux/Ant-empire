@@ -75,8 +75,9 @@ window.loadSlot = function(slot) {
     startGameLoop();
     AudioManager.sfx.buttonClick();
   } else {
+    // New colony – reset state to defaults
+    resetStateToDefault(slot);
     currentSlot = slot;
-    state.colonyName = 'Colony ' + (slot + 1);
     hideMainMenu();
     initGameSystems();
     startGameLoop();
@@ -460,5 +461,4 @@ function initGameSystems() {
   gameSystemsReady = true;
 }
 
-// Run init
 initThreeJS();
