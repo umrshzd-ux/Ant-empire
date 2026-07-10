@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Ant Empire: Idle Colony</title>
 <style>
-  /* ===== FULL POLISHED CSS (updated for landscape + visual appeal) ===== */
+  /* ===== FULL POLISHED CSS (landscape scroll + visual appeal) ===== */
   html, body { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: #1a1208; font-family: -apple-system, Roboto, "Segoe UI", sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
   #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; will-change: transform; }
   canvas { display: block; }
@@ -238,7 +238,7 @@
 <div id="ascension-shop-panel"><div style="color:#ffaa00;font-weight:700;text-align:center;">⬆️ Ascension Shop</div><div id="ascension-shop-list"></div></div>
 <div id="achievements-panel"><div style="color:#ffd27a;font-weight:700;text-align:center;">🏆 Achievements</div><div id="ach-list"></div></div>
 
-<!-- Load order: main.js first to define Three.js and key globals -->
+<!-- load scripts in correct order -->
 <script src="js/three.min.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/config.js"></script>
@@ -324,4 +324,4 @@
   })();
 </script>
 </body>
-  </html>
+</html>
