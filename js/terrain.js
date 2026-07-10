@@ -1,9 +1,7 @@
 // ===== WORLD CONSTANTS & TERRAIN GENERATION =====
 
-// Reusable scratch vector (also used by other modules)
 var _v3 = new THREE.Vector3();
 
-// World dimensions and positions
 var SW = 36, SD = 26, TX = -9, CD = 5, CZ = 2.5, DFZ = CZ + CD / 2, TCZ = CZ;
 var CCY = -3.2, CH = 3.6, CCEY = CCY + CH / 2, CCFY = CCY - CH / 2;
 var GTY = 1.0, GUY = 0, TTY = GUY + 0.05, TBY = CCEY - 0.05, NR = 1.15;
@@ -28,7 +26,6 @@ var PATROL_POINTS = [
   new THREE.Vector3(TX - 2, GTY, TCZ + 3)
 ];
 
-// Terrain meshes
 var mound, rim, collar;
 function buildTerrain() {
   var c = document.createElement("canvas");
@@ -47,18 +44,10 @@ function buildTerrain() {
   var surfaceMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.9, color: 0xffffff, side: THREE.DoubleSide });
   var surf = new THREE.Mesh(new THREE.PlaneGeometry(SW, SD), surfaceMat);
   surf.rotation.x = -Math.PI / 2;
-  surf.position.set(0, GTY, 0);
+  surf.position.set(0, GTY + 0.01, 0); // slightly raised to avoid z-fight
   surf.receiveShadow = true;
   scene.add(surf);
 
-  // Solid ground block to prevent floating appearance
-  var groundBlock = new THREE.Mesh(new THREE.BoxGeometry(SW, 0.8, SD), new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.9 }));
-  groundBlock.position.set(0, GTY - 0.4, 0);
-  groundBlock.receiveShadow = true;
-  groundBlock.castShadow = true;
-  scene.add(groundBlock);
-
-  // Dirt layers
   var dMat = new THREE.MeshStandardMaterial({ color: 0x6b4626, roughness: 1 });
   var bottomPlat = new THREE.Mesh(new THREE.PlaneGeometry(SW + 20, SD + 10), dMat);
   bottomPlat.rotation.x = -Math.PI / 2;
@@ -85,7 +74,6 @@ function buildTerrain() {
   bottomDirt.receiveShadow = true;
   scene.add(bottomDirt);
 
-  // Trees and bushes
   function addTree(x, z, s) {
     var g = new THREE.Group();
     var tr = new THREE.Mesh(new THREE.CylinderGeometry(0.15 * s, 0.2 * s, 0.8 * s, 6), new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 }));
@@ -123,7 +111,6 @@ function buildTerrain() {
     else addBush(SW / 2 - 1.5, z, 0.4 + Math.random() * 0.4);
   }
 
-  // Dirt paths to food stations
   var trMat = new THREE.MeshStandardMaterial({ color: 0x8a6a3e, roughness: 1 });
   for (var fi = 0; fi < FS.length; fi++) {
     var st = FS[fi];
@@ -148,7 +135,6 @@ function buildTerrain() {
     }
   }
 
-  // Nest entrance (mound, rim, collar)
   mound = new THREE.Mesh(new THREE.CylinderGeometry(NR + 0.3, NR + 0.6, 0.18, 16), new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 }));
   mound.position.set(TX, GTY + 0.06, TCZ);
   mound.receiveShadow = mound.castShadow = true;
@@ -163,7 +149,6 @@ function buildTerrain() {
   collar.castShadow = collar.receiveShadow = true;
   scene.add(collar);
 
-  // Patrol points markers
   for (var pi = 0; pi < PATROL_POINTS.length; pi++) {
     var pt = PATROL_POINTS[pi];
     var m = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0xaa4444, emissive: 0x220000, emissiveIntensity: 0.3 }));
@@ -172,7 +157,6 @@ function buildTerrain() {
   }
 }
 
-// Mushrooms & night effects
 var mushroomMeshes = [], mushroomLights = [];
 function initMushrooms() {
   for (var mi = 0; mi < 15; mi++) {
@@ -204,7 +188,6 @@ function createMushroom(x, z) {
   mushroomLights.push(light);
 }
 
-// Rain drops
 var rainDrops = [];
 function initRainDrops() {
   for (var ri = 0; ri < 300; ri++) {
@@ -217,7 +200,6 @@ function initRainDrops() {
   }
 }
 
-// Particle system
 var particlePool = [];
 function initParticles() { for (var pi = 0; pi < 200; pi++) particlePool.push(createParticle()); }
 function createParticle() {
@@ -259,8 +241,6 @@ function updateParticles(dt) {
     if (p.life >= p.maxLife) { p.active = false; p.mesh.visible = false; }
   }
 }
-
-// Mesh disposal helper
 function disposeMesh(mesh) {
   if (!mesh) return;
   mesh.traverse(function(child) {
@@ -272,8 +252,6 @@ function disposeMesh(mesh) {
     }
   });
 }
-
-// Food station visuals
 function initFoodStations() {
   for (var fi = 0; fi < FS.length; fi++) {
     var st = FS[fi];
@@ -290,4 +268,4 @@ function initFoodStations() {
     st.markerMesh = m;
     makeLabel("🌾 " + st.label, st.x, GTY + 2.2, st.z, 256, 64, false);
   }
-}
+        }
