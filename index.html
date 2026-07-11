@@ -5,204 +5,463 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Ant Empire: Idle Colony</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0502; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* ============================================================
+   AAA PREMIUM MOBILE STRATEGY GAME UI – ANT EMPIRE
+   Pure CSS underground colony environment
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0502; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 
-  /* ===== DUST PARTICLES ===== */
-  #dust-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-  .dust-particle { position: absolute; background: rgba(255,200,140,0.12); border-radius: 50%; animation: dustFloat linear infinite; }
-  @keyframes dustFloat {
-    0% { transform: translateY(0) translateX(0); opacity: 0; }
-    10% { opacity: 0.8; }
-    90% { opacity: 0.6; }
-    100% { transform: translateY(-120px) translateX(30px); opacity: 0; }
-  }
+/* ============================================================
+   PARALLAX BACKGROUND LAYERS
+   ============================================================ */
+#bg-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
 
-  /* ===== VOLUMETRIC LIGHT RAYS ===== */
-  #light-rays { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; background: radial-gradient(ellipse at 50% 0%, rgba(255,180,80,0.08) 0%, transparent 60%), radial-gradient(ellipse at 30% 0%, rgba(255,200,120,0.04) 0%, transparent 50%), radial-gradient(ellipse at 70% 0%, rgba(255,200,120,0.04) 0%, transparent 50%); }
+/* Deep cave background */
+.bg-layer { position: absolute; top: 0; left: 0; width: 120%; height: 120%; will-change: transform; }
+#bg-far {
+  background:
+    radial-gradient(ellipse at 25% 20%, #1a0f08 0%, transparent 45%),
+    radial-gradient(ellipse at 75% 30%, #1c1008 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 80%, #0d0603 0%, transparent 50%),
+    linear-gradient(180deg, #1c1008 0%, #0f0804 30%, #0a0402 60%, #060302 100%);
+  z-index: 1;
+}
+#bg-mid {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(80,45,20,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(60,35,15,0.2) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(40,22,10,0.3) 0%, transparent 70%);
+  z-index: 2;
+}
+#bg-near {
+  background:
+    radial-gradient(ellipse at 20% 70%, rgba(90,50,25,0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 25%, rgba(70,40,20,0.12) 0%, transparent 35%),
+    radial-gradient(circle at 50% 90%, rgba(30,15,8,0.4) 0%, transparent 50%);
+  z-index: 3;
+}
 
-  /* ===== VIGNETTE ===== */
-  #vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%); }
+/* Soil texture overlay */
+#soil-texture {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(60,30,15,0.4) 2px, transparent 2px),
+    radial-gradient(circle at 85% 35%, rgba(50,25,12,0.3) 3px, transparent 3px),
+    radial-gradient(circle at 40% 60%, rgba(55,28,14,0.35) 4px, transparent 4px),
+    radial-gradient(circle at 65% 75%, rgba(45,22,10,0.3) 2px, transparent 2px),
+    radial-gradient(circle at 25% 80%, rgba(50,28,14,0.25) 3px, transparent 3px),
+    radial-gradient(circle at 75% 15%, rgba(40,20,10,0.3) 5px, transparent 5px),
+    radial-gradient(circle at 10% 50%, rgba(55,30,16,0.2) 3px, transparent 3px),
+    radial-gradient(circle at 90% 55%, rgba(48,24,12,0.25) 4px, transparent 4px),
+    radial-gradient(circle at 50% 40%, rgba(42,20,10,0.3) 2px, transparent 2px),
+    radial-gradient(circle at 30% 10%, rgba(52,26,13,0.2) 3px, transparent 3px);
+  background-size: 200px 200px, 180px 180px, 220px 220px, 190px 190px, 210px 210px, 200px 200px, 180px 180px, 220px 220px, 190px 190px, 200px 200px;
+  background-position: 0 0, 40px 20px, 80px 60px, 120px 30px, 160px 70px, 20px 80px, 100px 40px, 140px 10px, 60px 50px, 180px 90px;
+  opacity: 0.6;
+}
 
-  /* ===== CANVAS ===== */
-  #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; will-change: transform; }
-  canvas { display: block; }
+/* Tunnel entrances */
+#tunnels {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
+  background:
+    radial-gradient(ellipse at 50% 85%, #0a0502 0%, transparent 45%),
+    radial-gradient(ellipse at 25% 70%, #0d0704 0%, transparent 30%),
+    radial-gradient(ellipse at 75% 65%, #0b0603 0%, transparent 28%);
+}
 
-  /* ===== HUD ===== */
-  #hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 10px; pointer-events: none; z-index: 10; }
-  .resource-pill { display: flex; align-items: center; gap: 4px; background: linear-gradient(180deg, rgba(40,25,10,0.85), rgba(15,8,3,0.85)); border: 1px solid rgba(200,150,80,0.4); border-radius: 18px; padding: 5px 12px 5px 7px; color: #f3e3c4; font-size: 13px; font-weight: 600; box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.1); }
-  .resource-pill.clickable { cursor: pointer; pointer-events: auto; border-color: rgba(255,200,100,0.7); box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 6px rgba(255,180,80,0.25), inset 0 1px 0 rgba(255,200,140,0.15); }
-  .resource-pill.clickable:active { transform: scale(0.96); }
-  .resource-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
-  .icon-food { background: linear-gradient(135deg, #d6a85a, #b8883a); } .icon-level { background: linear-gradient(135deg, #7fae5a, #5a8a3a); } .icon-gem { background: linear-gradient(135deg, #e040fb, #a020c0); }
-  .icon-wave { background: #aa3333; color: #ffcccc; font-size: 10px; } .icon-event { background: #4488ff; color: #ccddff; font-size: 10px; }
-  .icon-boss { background: #cc0000; color: #fff; font-size: 10px; } .icon-prestige { background: linear-gradient(135deg, #ff44ff, #cc22cc); color: #fff; font-size: 10px; }
-  .icon-virtual { background: #8888cc; color: #ddd; font-size: 10px; } .icon-daily { background: #44aaff; color: #fff; font-size: 10px; } .icon-ascend { background: linear-gradient(135deg, #ffaa00, #cc7700); color: #fff; font-size: 10px; }
-  #top-left, #top-right { display: flex; flex-direction: column; gap: 4px; }
+/* Tree roots */
+#roots {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 6;
+  background:
+    linear-gradient(150deg, transparent 40%, rgba(40,20,10,0.3) 41%, rgba(50,25,12,0.4) 43%, transparent 44%),
+    linear-gradient(30deg, transparent 55%, rgba(35,18,9,0.25) 56%, rgba(45,22,11,0.35) 58%, transparent 59%),
+    linear-gradient(110deg, transparent 65%, rgba(38,19,10,0.2) 66%, rgba(42,21,11,0.3) 68%, transparent 69%);
+}
 
-  #bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 10; flex-wrap: wrap; }
-  .cam-btn, .build-btn, .rally-btn, .menu-btn-sm {
-    pointer-events: auto;
-    background: linear-gradient(180deg, rgba(50,30,15,0.9), rgba(20,12,5,0.9));
-    border: 1px solid rgba(200,150,80,0.5);
-    color: #f3e3c4; border-radius: 14px; padding: 9px 14px; font-size: 12px; font-weight: 700;
-    text-align: center; min-width: 56px; position: relative; cursor: pointer;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.12);
-    transition: transform 0.1s, box-shadow 0.1s;
-  }
-  .cam-btn:active, .build-btn:active, .rally-btn:active, .menu-btn-sm:active { transform: scale(0.93); box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 2px 4px rgba(0,0,0,0.3); }
-  .rally-btn .cooldown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #aaa; }
+/* ============================================================
+   GOD RAYS / LIGHT SHAFTS
+   ============================================================ */
+#god-rays {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7;
+  background:
+    radial-gradient(ellipse at 40% -10%, rgba(255,180,80,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% -5%, rgba(255,200,100,0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 0%, rgba(255,160,60,0.06) 0%, transparent 55%);
+  animation: godRayPulse 8s ease-in-out infinite alternate;
+}
+@keyframes godRayPulse {
+  0% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 0.7; transform: scale(1); }
+}
 
-  #surge-btn, #event-btn, #summon-btn { position: absolute; left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 22px; font-size: 16px; font-weight: 700; z-index: 15; pointer-events: auto; display: none; cursor: pointer; }
-  #surge-btn { top: 100px; background: linear-gradient(180deg, rgba(255,170,50,0.95), rgba(200,120,20,0.95)); border: 2px solid #ffaa00; color: #1a1208; box-shadow: 0 4px 15px rgba(255,170,50,0.4); }
-  #event-btn { top: 145px; background: linear-gradient(180deg, rgba(50,150,255,0.95), rgba(30,100,200,0.95)); border: 2px solid #4488ff; color: #fff; animation: eventPulse 0.8s ease-in-out infinite; box-shadow: 0 4px 15px rgba(68,136,255,0.4); }
-  @keyframes eventPulse { 0%,100% { box-shadow: 0 0 5px rgba(68,136,255,0.5); } 50% { box-shadow: 0 0 25px rgba(68,136,255,0.9); } }
-  #summon-btn { top: 190px; background: linear-gradient(180deg, rgba(200,50,50,0.95), rgba(150,20,20,0.95)); border: 2px solid #cc0000; color: #fff; box-shadow: 0 4px 15px rgba(200,50,50,0.4); }
+/* ============================================================
+   DUST PARTICLES
+   ============================================================ */
+#dust-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8; }
+.dust { position: absolute; background: radial-gradient(circle, rgba(255,200,140,0.25) 0%, transparent 70%); border-radius: 50%; animation: dustDrift linear infinite; }
+@keyframes dustDrift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  5% { opacity: 0.9; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.5; }
+  100% { transform: translate(40px, -160px) scale(0.3); opacity: 0; }
+}
 
-  #boss-health-bar { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 280px; height: 14px; background: rgba(0,0,0,0.85); border: 1px solid #cc0000; border-radius: 7px; overflow: hidden; z-index: 15; display: none; box-shadow: 0 0 10px rgba(200,0,0,0.3); }
-  #boss-health-fill { height: 100%; width: 100%; transition: width 0.3s ease; background: linear-gradient(180deg, #ff4444, #aa0000); }
-  #boss-name { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; z-index: 15; display: none; text-shadow: 0 0 8px rgba(255,0,0,0.6); }
+/* ============================================================
+   VIGNETTE
+   ============================================================ */
+#vignette {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%);
+}
 
-  /* ===== LOADING SCREEN ===== */
-  #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 50% 30%, #3a2a14 0%, #0a0502 80%); color: #f3e3c4; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-size: 15px; gap: 14px; }
-  #loading .title { font-size: 38px; font-weight: 900; background: linear-gradient(45deg, #ffd27a, #ffaa33, #ffd27a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: glowTitle 2s ease-in-out infinite alternate; filter: drop-shadow(0 0 12px rgba(255,170,50,0.5)); }
-  @keyframes glowTitle { 0% { filter: drop-shadow(0 0 8px rgba(255,170,50,0.4)); transform: scale(1); } 100% { filter: drop-shadow(0 0 22px rgba(255,170,50,0.8)); transform: scale(1.04); } }
-  #loading .subtitle { font-size: 18px; color: #c9a96e; opacity: 0.85; }
-  #loading .ant-march { display: flex; gap: 8px; margin: 8px 0; }
-  .ant-march span { font-size: 30px; animation: marchBounce 0.6s ease-in-out infinite alternate; }
-  .ant-march span:nth-child(odd) { animation-delay: 0.15s; }
-  @keyframes marchBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-6px); } }
-  #loading .progress-bar { width: 200px; height: 7px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
-  #loading .progress-fill { height: 100%; background: linear-gradient(90deg, #ffaa33, #ffd27a, #ffaa33); width: 0%; border-radius: 4px; box-shadow: 0 0 12px #ffaa33; transition: width 0.3s ease; background-size: 200% 100%; animation: shimmerBar 1.5s linear infinite; }
-  @keyframes shimmerBar { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
-  #loading .loading-msg { color: #aa8855; font-size: 14px; font-weight: 500; margin-top: 4px; }
+/* ============================================================
+   WARM CAVE GLOW OVERLAY
+   ============================================================ */
+#cave-glow {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+  background:
+    radial-gradient(circle at 50% 80%, rgba(255,140,40,0.12) 0%, transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(255,160,60,0.06) 0%, transparent 40%),
+    radial-gradient(circle at 70% 75%, rgba(255,150,50,0.05) 0%, transparent 35%);
+  animation: caveGlowBreath 6s ease-in-out infinite alternate;
+}
+@keyframes caveGlowBreath {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
 
-  /* ===== MAIN MENU ===== */
-  #main-menu {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
-    background: radial-gradient(ellipse at 30% 25%, rgba(120,80,40,0.3) 0%, transparent 55%),
-                radial-gradient(ellipse at 70% 75%, rgba(120,80,40,0.25) 0%, transparent 55%),
-                linear-gradient(180deg, #2c1a0a 0%, #0a0502 100%);
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    color: #f3e3c4; gap: 18px; padding: 50px 20px 30px;
-    overflow-y: auto; -webkit-overflow-scrolling: touch;
-  }
-  #main-menu .menu-title { font-size: 42px; font-weight: 900; background: linear-gradient(180deg, #ffe8b0, #c99030); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 18px rgba(255,170,50,0.5)); margin-bottom: 2px; }
-  #main-menu .menu-subtitle { font-size: 17px; color: #c9a96e; opacity: 0.9; margin-bottom: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); letter-spacing: 0.5px; }
-  .save-slot {
-    width: 290px;
-    background: linear-gradient(180deg, rgba(40,24,12,0.9), rgba(18,10,4,0.9));
-    border: 1px solid rgba(200,150,80,0.45);
-    border-radius: 18px; padding: 16px 20px; cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.08);
-  }
-  .save-slot:hover { transform: translateY(-3px); border-color: #ffb700; box-shadow: 0 10px 28px rgba(255,180,80,0.25), 0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.15); }
-  .save-slot .slot-name { font-size: 19px; font-weight: 700; color: #ffd27a; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-  .save-slot .slot-info { font-size: 13px; color: #bb9966; margin-top: 4px; }
-  .save-slot .slot-empty { font-size: 16px; color: #888; font-style: italic; }
+/* ============================================================
+   CANVAS CONTAINER
+   ============================================================ */
+#canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 11; }
+canvas { display: block; }
 
-  .menu-btn {
-    padding: 14px 30px; border: none; border-radius: 14px;
-    background: linear-gradient(180deg, rgba(200,150,80,0.3), rgba(160,110,50,0.15));
-    color: #f3e3c4; font-size: 16px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5), 0 0 10px rgba(200,150,80,0.15), inset 0 1px 0 rgba(255,220,160,0.2);
-    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-    backdrop-filter: blur(4px); border: 1px solid rgba(200,150,80,0.4);
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  }
-  .menu-btn:hover { transform: scale(1.04); box-shadow: 0 8px 24px rgba(200,150,80,0.35), 0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,160,0.3); background: linear-gradient(180deg, rgba(220,170,90,0.4), rgba(180,130,60,0.2)); }
-  .menu-btn:active { transform: scale(0.95); box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 3px 6px rgba(0,0,0,0.3); }
+/* ============================================================
+   HUD PILLS
+   ============================================================ */
+#hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 10px; pointer-events: none; z-index: 20; }
+.resource-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: linear-gradient(180deg, rgba(45,28,14,0.9), rgba(18,10,4,0.9));
+  border: 1px solid rgba(200,150,80,0.35);
+  border-radius: 20px; padding: 5px 12px 5px 7px;
+  color: #f3e3c4; font-size: 12px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 8px rgba(180,120,50,0.12), inset 0 1px 0 rgba(255,200,140,0.1);
+}
+.resource-pill.clickable { cursor: pointer; pointer-events: auto; border-color: rgba(255,200,100,0.55); box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(255,180,80,0.2), inset 0 1px 0 rgba(255,200,140,0.15); }
+.resource-pill.clickable:active { transform: scale(0.95); }
+.resource-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+.icon-food { background: linear-gradient(135deg, #d6a85a, #a87830); }
+.icon-level { background: linear-gradient(135deg, #7fae5a, #4d7a2e); }
+.icon-gem { background: linear-gradient(135deg, #e040fb, #9020c0); }
+.icon-wave, .icon-event, .icon-boss, .icon-prestige, .icon-virtual, .icon-daily, .icon-ascend { background: #444; color: #fff; }
+#top-left, #top-right { display: flex; flex-direction: column; gap: 4px; }
 
-  /* ===== FLOATING PANELS ===== */
-  .overlay-panel {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
-    border: 1px solid rgba(200,150,80,0.55); border-radius: 22px; padding: 26px; z-index: 55;
-    display: none; flex-direction: column; gap: 14px; min-width: 310px;
-    max-height: 85vh; overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.75), 0 0 35px rgba(200,140,60,0.2), 0 0 2px rgba(255,200,140,0.3), inset 0 1px 0 rgba(255,200,140,0.08);
-    backdrop-filter: blur(12px);
-    -webkit-overflow-scrolling: touch;
-    animation: panelIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  @keyframes panelIn { 0% { transform: translate(-50%,-50%) scale(0.85); opacity: 0; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
-  .overlay-panel .panel-title { font-size: 23px; font-weight: 800; background: linear-gradient(180deg, #ffe0a0, #c99030); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); margin-bottom: 2px; }
-  .setting-row { display: flex; justify-content: space-between; align-items: center; color: #f3e3c4; font-size: 16px; }
-  .toggle-switch { width: 54px; height: 30px; background: linear-gradient(180deg, #444, #222); border-radius: 15px; cursor: pointer; position: relative; transition: background 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05); }
-  .toggle-switch.on { background: linear-gradient(180deg, #5a5, #383); }
-  .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; background: linear-gradient(180deg, #fff, #ccc); border-radius: 50%; transition: left 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-  .toggle-switch.on::after { left: 27px; }
+/* ============================================================
+   BOTTOM BAR
+   ============================================================ */
+#bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); pointer-events: none; z-index: 20; flex-wrap: wrap; }
+.cam-btn, .build-btn, .rally-btn, .menu-btn-sm {
+  pointer-events: auto;
+  background: linear-gradient(180deg, rgba(55,32,16,0.92), rgba(22,12,5,0.92));
+  border: 1px solid rgba(200,150,80,0.4);
+  color: #f3e3c4; border-radius: 14px; padding: 9px 14px; font-size: 11px; font-weight: 700;
+  text-align: center; min-width: 50px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.1);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.cam-btn:active, .build-btn:active, .rally-btn:active, .menu-btn-sm:active { transform: scale(0.92); box-shadow: 0 1px 4px rgba(0,0,0,0.6), inset 0 2px 5px rgba(0,0,0,0.3); }
+.rally-btn .cooldown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #aaa; }
 
-  .stat-row { display: flex; justify-content: space-between; color: #f3e3c4; font-size: 14px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-  .stat-row .stat-val { color: #ffd27a; font-weight: 700; }
-  .daily-challenge { padding: 10px 12px; background: rgba(255,255,255,0.06); border-radius: 12px; font-size: 14px; color: #f3e3c4; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
-  .daily-challenge.completed { opacity: 0.5; }
-  .roadmap-milestone { padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 12px; font-size: 14px; color: #f3e3c4; display: flex; justify-content: space-between; align-items: center; }
-  .roadmap-milestone.unlocked { background: rgba(100,255,100,0.1); border: 1px solid rgba(100,255,100,0.3); }
+/* ============================================================
+   SURGE / EVENT / SUMMON BUTTONS
+   ============================================================ */
+#surge-btn, #event-btn, #summon-btn { position: absolute; left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 22px; font-size: 15px; font-weight: 700; z-index: 25; pointer-events: auto; display: none; cursor: pointer; }
+#surge-btn { top: 100px; background: linear-gradient(180deg, rgba(255,170,50,0.95), rgba(200,120,20,0.95)); border: 2px solid #ffaa00; color: #1a1208; box-shadow: 0 4px 20px rgba(255,170,50,0.4), inset 0 1px 0 rgba(255,255,200,0.3); }
+#event-btn { top: 145px; background: linear-gradient(180deg, rgba(50,150,255,0.95), rgba(30,100,200,0.95)); border: 2px solid #4488ff; color: #fff; animation: eventPulse 0.8s ease-in-out infinite; box-shadow: 0 4px 20px rgba(68,136,255,0.4); }
+@keyframes eventPulse { 0%,100% { box-shadow: 0 0 5px rgba(68,136,255,0.5); } 50% { box-shadow: 0 0 25px rgba(68,136,255,0.9); } }
+#summon-btn { top: 190px; background: linear-gradient(180deg, rgba(200,50,50,0.95), rgba(150,20,20,0.95)); border: 2px solid #cc0000; color: #fff; box-shadow: 0 4px 20px rgba(200,50,50,0.4); }
 
-  /* ===== MODAL OVERLAYS ===== */
-  .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 60; color: #f3e3c4;
-  }
-  .modal-overlay .modal-card {
-    background: linear-gradient(160deg, rgba(35,20,10,0.98), rgba(15,8,3,0.98));
-    border: 1px solid rgba(200,150,80,0.6); border-radius: 22px; padding: 28px 24px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8), 0 0 40px rgba(200,140,60,0.2);
-    text-align: center; max-width: 340px; animation: panelIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .modal-title { font-size: 25px; font-weight: 800; margin-bottom: 14px; background: linear-gradient(180deg, #ffe0a0, #c99030); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-  .modal-btn {
-    padding: 14px 34px; border-radius: 14px; border: none; font-size: 18px; font-weight: 700; cursor: pointer;
-    margin-top: 18px; transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  }
-  .modal-btn:active { transform: scale(0.94); }
-  .modal-btn.primary { background: linear-gradient(180deg, #ffb84d, #e69500); color: #1a1208; box-shadow: 0 5px 20px rgba(255,170,50,0.3); }
-  .modal-btn.secondary { background: linear-gradient(180deg, #555, #333); color: #ccc; }
+/* ============================================================
+   BOSS HEALTH BAR
+   ============================================================ */
+#boss-health-bar { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 260px; height: 12px; background: rgba(0,0,0,0.85); border: 1px solid #cc0000; border-radius: 6px; overflow: hidden; z-index: 25; display: none; box-shadow: 0 0 12px rgba(200,0,0,0.3); }
+#boss-health-fill { height: 100%; width: 100%; background: linear-gradient(180deg, #ff4444, #aa0000); transition: width 0.3s ease; }
+#boss-name { position: absolute; top: 34px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; z-index: 25; display: none; text-shadow: 0 0 8px rgba(255,0,0,0.6); color: #ff6666; }
 
-  /* ===== BOTTOM PANELS (build, upgrade, shop, etc.) ===== */
-  .game-panel {
-    position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
-    background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
-    border: 1px solid rgba(200,150,80,0.6); border-radius: 18px;
-    padding: 14px; display: none; flex-direction: column; gap: 10px; z-index: 12;
-    min-width: 270px; max-height: 60vh; overflow-y: auto;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.7), 0 0 18px rgba(200,140,60,0.18), inset 0 1px 0 rgba(255,200,140,0.06);
-    backdrop-filter: blur(8px);
-    -webkit-overflow-scrolling: touch;
-    animation: panelIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
-  }
-  .game-panel.open { display: flex; }
-  .panel-option { display: flex; justify-content: space-between; align-items: center; color: #f3e3c4; font-size: 14px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-  .panel-option button {
-    background: linear-gradient(180deg, #d6a85a, #a87830); border: none; color: #1a1208;
-    border-radius: 9px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 13px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,160,0.3);
-    transition: transform 0.1s, box-shadow 0.1s;
-  }
-  .panel-option button:hover { background: linear-gradient(180deg, #e0b86a, #b8883a); }
-  .panel-option button:active { transform: scale(0.93); box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.3); }
-  .panel-option button:disabled { background: #555; color: #999; cursor: default; box-shadow: none; }
+/* ============================================================
+   LOADING SCREEN
+   ============================================================ */
+#loading {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 200;
+  background: radial-gradient(ellipse at 50% 25%, #3a2010 0%, #0a0502 80%);
+  color: #f3e3c4; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 15px; gap: 14px;
+}
+#loading .title { font-size: 40px; font-weight: 900; background: linear-gradient(180deg, #ffe8b0, #c99030); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: glowTitle 2s ease-in-out infinite alternate; filter: drop-shadow(0 0 12px rgba(255,170,50,0.5)); }
+@keyframes glowTitle { 0% { filter: drop-shadow(0 0 8px rgba(255,170,50,0.4)); transform: scale(1); } 100% { filter: drop-shadow(0 0 22px rgba(255,170,50,0.8)); transform: scale(1.04); } }
+#loading .subtitle { font-size: 18px; color: #c9a96e; opacity: 0.85; }
+#loading .ant-march { display: flex; gap: 8px; }
+.ant-march span { font-size: 30px; animation: marchBounce 0.6s ease-in-out infinite alternate; }
+.ant-march span:nth-child(odd) { animation-delay: 0.15s; }
+@keyframes marchBounce { 0% { transform: translateY(0); } 100% { transform: translateY(-6px); } }
+#loading .progress-bar { width: 200px; height: 7px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+#loading .progress-fill { height: 100%; background: linear-gradient(90deg, #ffaa33, #ffd27a, #ffaa33); width: 0%; border-radius: 4px; box-shadow: 0 0 12px #ffaa33; transition: width 0.3s ease; background-size: 200% 100%; animation: shimmerBar 1.5s linear infinite; }
+@keyframes shimmerBar { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+#loading .loading-msg { color: #aa8855; font-size: 14px; font-weight: 500; }
 
-  /* ===== TOASTS & FLOATERS ===== */
-  #floaters { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9; }
-  .floater { position: absolute; color: #ffe9a8; font-weight: 700; font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); animation: floatUp 1.0s ease-out forwards; }
-  @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-44px); opacity: 0; } }
-  #toast { position: absolute; top: 72px; left: 50%; transform: translateX(-50%); background: rgba(30,18,8,0.95); border: 1px solid rgba(200,150,80,0.6); color: #f3e3c4; padding: 9px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 11; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; white-space: nowrap; box-shadow: 0 6px 15px rgba(0,0,0,0.5); }
+/* ============================================================
+   MAIN MENU – PREMIUM 3D CAVE SCENE
+   ============================================================ */
+#main-menu {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  color: #f3e3c4; gap: 16px; padding: 50px 20px 30px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: transparent;
+}
+#main-menu .menu-title {
+  font-size: 44px; font-weight: 900;
+  background: linear-gradient(180deg, #ffe8b0 0%, #e0b860 30%, #c99030 70%, #a07020 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)) drop-shadow(0 0 20px rgba(255,170,50,0.5));
+  margin-bottom: 2px; letter-spacing: -1px;
+}
+#main-menu .menu-subtitle {
+  font-size: 16px; color: #c9a96e; opacity: 0.9; margin-bottom: 24px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6); letter-spacing: 1px;
+}
 
-  #achievement-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(20,10,0,0.96); border: 2px solid #ffd27a; color: #ffd27a; padding: 16px 24px; border-radius: 16px; font-size: 15px; font-weight: 700; z-index: 20; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.4s ease; display: flex; flex-direction: column; align-items: center; gap: 5px; box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(255,200,100,0.3); }
-  #tutorial-toast { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: rgba(20,10,0,0.93); border: 2px solid #ffaa33; color: #ffd27a; padding: 14px 22px; border-radius: 14px; font-size: 14px; font-weight: 600; z-index: 16; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.5s ease; max-width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+/* Save slots */
+.save-slot {
+  width: 290px;
+  background: linear-gradient(180deg, rgba(45,26,14,0.9), rgba(20,10,4,0.9));
+  border: 1px solid rgba(200,150,80,0.4);
+  border-radius: 18px; padding: 16px 20px; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25,0.8,0.25,1.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5), 0 0 12px rgba(180,120,50,0.08), inset 0 1px 0 rgba(255,200,140,0.08);
+  position: relative; overflow: hidden;
+}
+.save-slot::before {
+  content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(255,200,140,0.12) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.save-slot:hover::before { opacity: 1; }
+.save-slot:hover { transform: translateY(-4px); border-color: #ffb700; box-shadow: 0 12px 30px rgba(255,180,80,0.22), 0 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.15); }
+.save-slot:active { transform: scale(0.97); }
+.save-slot .slot-name { font-size: 19px; font-weight: 700; color: #ffd27a; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.save-slot .slot-info { font-size: 13px; color: #bb9966; margin-top: 4px; }
+.save-slot .slot-empty { font-size: 16px; color: #777; font-style: italic; }
+
+/* Menu buttons */
+.menu-btn {
+  padding: 14px 32px; border: none; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(200,150,80,0.28), rgba(140,100,40,0.14));
+  color: #f3e3c4; font-size: 16px; font-weight: 700; cursor: pointer;
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.5),
+    0 0 12px rgba(180,120,50,0.12),
+    inset 0 1px 0 rgba(255,220,160,0.2),
+    inset 0 -2px 0 rgba(0,0,0,0.3);
+  transition: all 0.15s cubic-bezier(0.25,0.8,0.25,1.2);
+  border: 1px solid rgba(200,150,80,0.35);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  position: relative; overflow: hidden;
+}
+.menu-btn::after {
+  content: ''; position: absolute; top: 2px; left: 10%; width: 80%; height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15), transparent);
+  border-radius: 50%;
+}
+.menu-btn:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 8px 28px rgba(200,150,80,0.3),
+    0 6px 18px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,220,160,0.3),
+    inset 0 -2px 0 rgba(0,0,0,0.25);
+  background: linear-gradient(180deg, rgba(220,170,90,0.38), rgba(160,120,50,0.2));
+}
+.menu-btn:active {
+  transform: scale(0.94);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.7),
+    inset 0 3px 8px rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,200,140,0.1);
+}
+
+/* ============================================================
+   FLOATING PANELS – 3D GLASS CARDS
+   ============================================================ */
+.overlay-panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  border: 1px solid rgba(200,150,80,0.5);
+  border-radius: 22px; padding: 26px; z-index: 70;
+  display: none; flex-direction: column; gap: 14px; min-width: 310px;
+  max-height: 82vh; overflow-y: auto;
+  box-shadow:
+    0 30px 60px rgba(0,0,0,0.75),
+    0 0 40px rgba(200,140,60,0.18),
+    0 0 2px rgba(255,200,140,0.3),
+    inset 0 1px 0 rgba(255,200,140,0.06);
+  backdrop-filter: blur(14px);
+  -webkit-overflow-scrolling: touch;
+  animation: panelIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes panelIn {
+  0% { transform: translate(-50%,-50%) scale(0.82); opacity: 0; }
+  60% { transform: translate(-50%,-50%) scale(1.03); }
+  100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+}
+.overlay-panel .panel-title {
+  font-size: 23px; font-weight: 800;
+  background: linear-gradient(180deg, #ffe0a0, #c99030);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); margin-bottom: 2px;
+}
+
+.setting-row { display: flex; justify-content: space-between; align-items: center; color: #f3e3c4; font-size: 16px; }
+.toggle-switch {
+  width: 54px; height: 30px; border-radius: 15px; cursor: pointer; position: relative;
+  background: linear-gradient(180deg, #3a3a3a, #1a1a1a);
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.04);
+  transition: background 0.3s;
+}
+.toggle-switch.on { background: linear-gradient(180deg, #5a5, #383); }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px;
+  background: linear-gradient(180deg, #fff, #ddd);
+  border-radius: 50%; transition: left 0.3s;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+.toggle-switch.on::after { left: 27px; }
+
+.stat-row { display: flex; justify-content: space-between; color: #f3e3c4; font-size: 14px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.stat-row .stat-val { color: #ffd27a; font-weight: 700; }
+.daily-challenge { padding: 10px 12px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 14px; color: #f3e3c4; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.04); }
+.daily-challenge.completed { opacity: 0.5; }
+.roadmap-milestone { padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 12px; font-size: 14px; color: #f3e3c4; display: flex; justify-content: space-between; align-items: center; }
+.roadmap-milestone.unlocked { background: rgba(100,255,100,0.08); border: 1px solid rgba(100,255,100,0.25); }
+
+/* ============================================================
+   MODAL OVERLAYS – PREMIUM POPUPS
+   ============================================================ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 80;
+  background: rgba(0,0,0,0.88); display: none; flex-direction: column; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay .modal-card {
+  background: linear-gradient(160deg, rgba(35,20,10,0.98), rgba(15,8,3,0.98));
+  border: 1px solid rgba(200,150,80,0.55);
+  border-radius: 22px; padding: 28px 24px;
+  box-shadow:
+    0 35px 70px rgba(0,0,0,0.8),
+    0 0 50px rgba(200,140,60,0.22),
+    0 0 3px rgba(255,200,140,0.25);
+  text-align: center; max-width: 340px;
+  animation: modalBounceIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalBounceIn {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.modal-title {
+  font-size: 25px; font-weight: 800; margin-bottom: 14px;
+  background: linear-gradient(180deg, #ffe0a0, #c99030);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+.modal-btn {
+  padding: 14px 34px; border-radius: 14px; border: none; font-size: 18px; font-weight: 700; cursor: pointer;
+  margin-top: 18px; transition: all 0.15s cubic-bezier(0.25,0.8,0.25,1.2);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  position: relative; overflow: hidden;
+}
+.modal-btn::after {
+  content: ''; position: absolute; top: 2px; left: 10%; width: 80%; height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+  border-radius: 50%;
+}
+.modal-btn:active { transform: scale(0.93); box-shadow: 0 2px 6px rgba(0,0,0,0.7), inset 0 3px 6px rgba(0,0,0,0.3); }
+.modal-btn.primary { background: linear-gradient(180deg, #ffb84d, #e69500); color: #1a1208; box-shadow: 0 6px 22px rgba(255,170,50,0.35), 0 4px 12px rgba(0,0,0,0.4); }
+.modal-btn.secondary { background: linear-gradient(180deg, #555, #333); color: #ccc; margin-top: 8px; }
+
+/* ============================================================
+   BOTTOM GAME PANELS (build, upgrade, shop, etc.)
+   ============================================================ */
+.game-panel {
+  position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  border: 1px solid rgba(200,150,80,0.5);
+  border-radius: 18px; padding: 14px; z-index: 30;
+  display: none; flex-direction: column; gap: 10px;
+  min-width: 270px; max-height: 58vh; overflow-y: auto;
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.7),
+    0 0 20px rgba(200,140,60,0.15),
+    0 0 2px rgba(255,200,140,0.2),
+    inset 0 1px 0 rgba(255,200,140,0.05);
+  backdrop-filter: blur(8px);
+  -webkit-overflow-scrolling: touch;
+  animation: panelSlideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes panelSlideUp {
+  0% { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+.game-panel.open { display: flex; }
+.panel-option {
+  display: flex; justify-content: space-between; align-items: center;
+  color: #f3e3c4; font-size: 14px; padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.panel-option button {
+  background: linear-gradient(180deg, #d6a85a, #a87830);
+  border: none; color: #1a1208; border-radius: 9px; padding: 7px 14px;
+  font-weight: 700; cursor: pointer; font-size: 13px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,160,0.3);
+  transition: all 0.1s;
+}
+.panel-option button:hover { background: linear-gradient(180deg, #e0b86a, #b8883a); }
+.panel-option button:active { transform: scale(0.92); box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 2px 5px rgba(0,0,0,0.3); }
+.panel-option button:disabled { background: #555; color: #999; cursor: default; box-shadow: none; }
+
+/* ============================================================
+   TOASTS & FLOATERS
+   ============================================================ */
+#floaters { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
+.floater { position: absolute; color: #ffe9a8; font-weight: 700; font-size: 14px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); animation: floatUp 1.0s ease-out forwards; }
+@keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-44px); opacity: 0; } }
+#toast { position: absolute; top: 72px; left: 50%; transform: translateX(-50%); background: rgba(30,18,8,0.95); border: 1px solid rgba(200,150,80,0.5); color: #f3e3c4; padding: 9px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 35; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+#achievement-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(20,10,0,0.96); border: 2px solid #ffd27a; color: #ffd27a; padding: 16px 24px; border-radius: 16px; font-size: 15px; font-weight: 700; z-index: 90; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.4s ease; display: flex; flex-direction: column; align-items: center; gap: 5px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255,200,100,0.3); }
+#tutorial-toast { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: rgba(20,10,0,0.93); border: 2px solid #ffaa33; color: #ffd27a; padding: 14px 22px; border-radius: 14px; font-size: 14px; font-weight: 600; z-index: 35; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.5s ease; max-width: 280px; box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
 </style>
 </head>
 <body>
-<div id="dust-layer"></div>
-<div id="light-rays"></div>
-<div id="vignette"></div>
 
+<!-- PARALLAX BACKGROUND LAYERS -->
+<div id="bg-container">
+  <div class="bg-layer" id="bg-far"></div>
+  <div class="bg-layer" id="bg-mid"></div>
+  <div class="bg-layer" id="bg-near"></div>
+  <div id="soil-texture"></div>
+  <div id="tunnels"></div>
+  <div id="roots"></div>
+</div>
+<div id="god-rays"></div>
+<div id="dust-layer"></div>
+<div id="vignette"></div>
+<div id="cave-glow"></div>
+<div id="canvas-container"></div>
+
+<!-- LOADING -->
 <div id="loading">
   <div class="title">🐜 Ant Empire</div>
   <div class="subtitle">Idle Colony Simulator</div>
@@ -210,12 +469,11 @@
   <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
   <div class="loading-msg" id="loading-msg">Loading Three.js...</div>
 </div>
-<div id="canvas-container"></div>
 
 <!-- MAIN MENU -->
-<div id="main-menu">
+<div id="main-menu" style="display:flex">
   <div class="menu-title">🐜 Ant Empire</div>
-  <div class="menu-subtitle">Build your colony, evolve, conquer!</div>
+  <div class="menu-subtitle">Build · Evolve · Conquer</div>
   <div id="save-slots"></div>
   <button class="menu-btn" id="btn-stats-menu">📊 Stats</button>
   <button class="menu-btn" id="btn-roadmap-menu">🗺️ Roadmap</button>
@@ -281,17 +539,17 @@
   <div id="top-left">
     <div class="resource-pill"><div class="resource-icon icon-food">🌾</div><span id="food-count">0</span>/<span id="food-cap">30</span></div>
     <div class="resource-pill"><div class="resource-icon icon-gem">💎</div><span id="gem-count">0</span></div>
-    <div class="resource-pill"><div class="resource-icon icon-wave">⚠️</div><span id="wave-timer">--</span></div>
-    <div class="resource-pill"><div class="resource-icon icon-event">🎲</div><span id="event-timer">--</span></div>
-    <div class="resource-pill"><div class="resource-icon icon-boss">💀</div><span id="boss-timer">--</span></div>
-    <div class="resource-pill"><div class="resource-icon icon-level">⭐</div>Lv<span id="level-count">1</span></div>
+    <div class="resource-pill"><span id="wave-timer">--</span></div>
+    <div class="resource-pill"><span id="event-timer">--</span></div>
+    <div class="resource-pill"><span id="boss-timer">--</span></div>
+    <div class="resource-pill"><span id="level-count">1</span> ⭐</div>
   </div>
   <div id="top-right">
     <div class="resource-pill"><span id="ant-count">3</span>🐜</div><div class="resource-pill"><span id="egg-count">0</span>🥚</div>
-    <div class="resource-pill"><div class="resource-icon icon-virtual">👻</div><span id="virtual-display">0</span>VW</div>
+    <div class="resource-pill"><span id="virtual-display">0</span>VW</div>
     <div class="resource-pill"><span id="streak-display">🔥1</span></div>
-    <div class="resource-pill clickable" id="prestige-pill"><div class="resource-icon icon-prestige">✨</div><span id="prestige-count">0PP</span></div>
-    <div class="resource-pill clickable" id="ascend-pill" style="display:none"><div class="resource-icon icon-ascend">⬆️</div><span id="ascend-points">0AP</span></div>
+    <div class="resource-pill clickable" id="prestige-pill">✨ <span id="prestige-count">0PP</span></div>
+    <div class="resource-pill clickable" id="ascend-pill" style="display:none">⬆️ <span id="ascend-points">0AP</span></div>
     <div class="resource-pill clickable" id="zone-pill"><span id="zone-display">🌳Forest</span></div>
     <button class="menu-btn-sm" id="btn-menu-ingame" style="pointer-events:auto;font-size:10px;padding:4px 8px">☰</button>
   </div>
@@ -331,7 +589,7 @@
     <div style="font-size:15px;color:#f3e3c4;margin:4px 0" id="prestige-info-text"></div>
     <div style="font-size:15px;color:#f3e3c4;margin:4px 0" id="prestige-reward-text"></div>
     <button class="modal-btn primary" id="prestige-confirm">Migrate Colony!</button>
-    <button class="modal-btn secondary" id="prestige-cancel" style="margin-top:8px">Cancel</button>
+    <button class="modal-btn secondary" id="prestige-cancel">Cancel</button>
   </div>
 </div>
 
@@ -342,7 +600,7 @@
     <div style="font-size:15px;color:#f3e3c4;margin:4px 0" id="ascend-info-text"></div>
     <div style="font-size:15px;color:#f3e3c4;margin:4px 0" id="ascend-reward-text"></div>
     <button class="modal-btn primary" id="ascend-confirm">Ascend!</button>
-    <button class="modal-btn secondary" id="ascend-cancel" style="margin-top:8px">Cancel</button>
+    <button class="modal-btn secondary" id="ascend-cancel">Cancel</button>
   </div>
 </div>
 
@@ -389,100 +647,77 @@
 <div id="ascension-shop-panel" class="game-panel"><div style="color:#ffaa00;font-weight:700;text-align:center">⬆️ Ascension Shop</div><div id="ascension-shop-list"></div></div>
 <div id="achievements-panel" class="game-panel"><div style="color:#ffd27a;font-weight:700;text-align:center">🏆 Achievements</div><div id="ach-list"></div></div>
 
+<!-- SCRIPTS -->
 <script>
-// Dust particles
+// ===== DUST PARTICLES =====
 (function(){
   var dust=document.getElementById('dust-layer');
-  for(var i=0;i<25;i++){
+  for(var i=0;i<28;i++){
     var p=document.createElement('div');
-    p.className='dust-particle';
-    var s=2+Math.random()*4;
+    p.className='dust';
+    var s=2+Math.random()*5;
     p.style.width=s+'px';p.style.height=s+'px';
     p.style.left=Math.random()*100+'%';
     p.style.top=Math.random()*100+'%';
-    p.style.animationDuration=6+Math.random()*10+'s';
-    p.style.animationDelay=Math.random()*8+'s';
+    p.style.animationDuration=8+Math.random()*14+'s';
+    p.style.animationDelay=Math.random()*10+'s';
     dust.appendChild(p);
   }
 })();
+
+// ===== PARALLAX ON SCROLL/TOUCH =====
+(function(){
+  var far=document.getElementById('bg-far'), mid=document.getElementById('bg-mid'), near=document.getElementById('bg-near');
+  var ox=0,oy=0;
+  document.addEventListener('mousemove',function(e){ ox=(e.clientX/window.innerWidth-0.5)*20; oy=(e.clientY/window.innerHeight-0.5)*20; });
+  document.addEventListener('touchmove',function(e){ if(e.touches.length>0){ ox=(e.touches[0].clientX/window.innerWidth-0.5)*20; oy=(e.touches[0].clientY/window.innerHeight-0.5)*20; } },{passive:true});
+  function anim(){
+    ox+=(0-ox)*0.03; oy+=(0-oy)*0.03;
+    if(far)far.style.transform='translate('+(ox*0.15)+'px,'+(oy*0.15)+'px)';
+    if(mid)mid.style.transform='translate('+(ox*0.3)+'px,'+(oy*0.3)+'px)';
+    if(near)near.style.transform='translate('+(ox*0.5)+'px,'+(oy*0.5)+'px)';
+    requestAnimationFrame(anim);
+  }
+  anim();
+})();
 </script>
 
-<script src="js/three.min.js?v=20250711c"></script>
-<script src="js/audio.js?v=20250711c"></script>
-<script src="js/config.js?v=20250711c"></script>
-<script src="js/state.js?v=20250711c"></script>
-<script src="js/terrain.js?v=20250711c"></script>
-<script src="js/main.js?v=20250711c"></script>
-<script src="js/camera.js?v=20250711c"></script>
-<script src="js/chambers.js?v=20250711c"></script>
-<script src="js/ants.js?v=20250711c"></script>
-<script src="js/enemies.js?v=20250711c"></script>
-<script src="js/combat.js?v=20250711c"></script>
-<script src="js/ui.js?v=20250711c"></script>
-<script src="js/abilities.js?v=20250711c"></script>
-<script src="js/shop.js?v=20250711c"></script>
-<script src="js/upgrades.js?v=20250711c"></script>
+<script src="js/three.min.js?v=premium"></script>
+<script src="js/audio.js?v=premium"></script>
+<script src="js/config.js?v=premium"></script>
+<script src="js/state.js?v=premium"></script>
+<script src="js/terrain.js?v=premium"></script>
+<script src="js/main.js?v=premium"></script>
+<script src="js/camera.js?v=premium"></script>
+<script src="js/chambers.js?v=premium"></script>
+<script src="js/ants.js?v=premium"></script>
+<script src="js/enemies.js?v=premium"></script>
+<script src="js/combat.js?v=premium"></script>
+<script src="js/ui.js?v=premium"></script>
+<script src="js/abilities.js?v=premium"></script>
+<script src="js/shop.js?v=premium"></script>
+<script src="js/upgrades.js?v=premium"></script>
 
 <script>
   window.onerror = function(msg, url, line) {
     var ld = document.getElementById('loading');
-    if (ld) {
-      ld.style.display = 'flex';
-      ld.innerHTML = '<div class="title">⚠️ Script Error</div>' +
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">' +
-        msg + '<br>File: ' + (url ? url.split('/').pop() : 'unknown') + ' (line ' + line + ')' +
-        '</div>' +
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-    }
+    if (ld) { ld.style.display = 'flex'; ld.innerHTML = '<div class="title">⚠️ Script Error</div><div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">' + msg + '<br>File: ' + (url ? url.split('/').pop() : 'unknown') + ' (line ' + line + ')</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>'; }
     return true;
   };
-
   (function() {
-    var ld = document.getElementById('loading');
-    var bar = document.getElementById('progress-fill');
-    var msg = document.getElementById('loading-msg');
-
-    if (typeof THREE === 'undefined') {
-      ld.innerHTML = '<div class="title">⚠️ Failed to load</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center">Three.js not loaded.</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
-
-    try { GameSettings.init(); AudioManager.init(); }
-    catch(e) {
-      ld.style.display='flex';
-      ld.innerHTML='<div class="title">⚠️ Startup Error</div><div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+e.toString()+'</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
-
+    var ld = document.getElementById('loading'), bar = document.getElementById('progress-fill'), msg = document.getElementById('loading-msg');
+    if (typeof THREE === 'undefined') { ld.innerHTML = '<div class="title">⚠️ Failed to load</div><div style="color:#ffaaaa;max-width:280px;text-align:center">Three.js not loaded.</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>'; return; }
+    try { GameSettings.init(); AudioManager.init(); } catch(e) { ld.style.display='flex'; ld.innerHTML='<div class="title">⚠️ Startup Error</div><div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+e.toString()+'</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>'; return; }
     var lastSlot = SaveManager.getLastSlot();
     try {
       if (lastSlot >= 0) {
         var data = SaveManager.loadGame(lastSlot);
-        if (data) {
-          currentSlot = lastSlot;
-          loadGameData(data);
-          hideMainMenu();
-          initGameSystems();
-          startGameLoop();
-          // Show offline rewards AFTER colony loads
-          var offlineData = calculateOfflineProgress();
-          if (offlineData && (offlineData.food > 0 || offlineData.eggs > 0 || offlineData.gems > 0)) {
-            setTimeout(function(){ showOfflineModal(offlineData); }, 500);
-          } else { checkDailyLogin(); }
-        } else { showMainMenu(); }
+        if (data) { currentSlot = lastSlot; loadGameData(data); hideMainMenu(); initGameSystems(); startGameLoop(); setTimeout(function() { var od = calculateOfflineProgress(); if (od && (od.food>0||od.eggs>0||od.gems>0)) showOfflineModal(od); else checkDailyLogin(); }, 600); }
+        else { showMainMenu(); }
       } else { showMainMenu(); }
-    } catch(e) {
-      ld.style.display='flex';
-      ld.innerHTML='<div class="title">⚠️ Startup Error</div><div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+e.toString()+'</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
-
-    if (ld) ld.style.display = 'none';
-    if (bar) bar.style.width = '100%';
-    if (msg) msg.textContent = 'Ready!';
+    } catch(e) { ld.style.display='flex'; ld.innerHTML='<div class="title">⚠️ Startup Error</div><div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+e.toString()+'</div><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>'; return; }
+    if (ld) ld.style.display = 'none'; if (bar) bar.style.width = '100%'; if (msg) msg.textContent = 'Ready!';
   })();
 </script>
 </body>
-  </html>
+                                                                                                 </html>
