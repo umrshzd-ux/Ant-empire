@@ -33,6 +33,14 @@ function initDOMRefs() {
 }
 initDOMRefs();
 
+// closeAllModals – used by offline, daily, prestige, ascend modals
+function closeAllModals() {
+  ['offline-modal', 'daily-modal', 'prestige-modal', 'ascend-modal', 'about-modal'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
 // Toasts
 var toastQueue = [], toastActive = false;
 function processToastQueue() {
