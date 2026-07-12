@@ -1,7 +1,7 @@
 // ===== MAIN ENTRY POINT =====
 
 var container, scene, camera, renderer, hLight, sLight, fLight, raycaster;
-var gameLoopActive = false;   // <-- flag to stop loop when in menu
+var gameLoopActive = false;   // flag to stop loop when in menu
 
 function initThreeJS() {
   container = document.getElementById("canvas-container");
@@ -34,7 +34,7 @@ function initThreeJS() {
   raycaster = new THREE.Raycaster();
 }
 
-// ----- Main menu functions -----
+// ----- Main menu functions (updated) -----
 function showMainMenu() {
   // Stop the game loop completely
   if (animFrameId) {
@@ -70,6 +70,7 @@ function hideMainMenu() {
   document.getElementById('canvas-container').style.display = 'block';
 }
 
+// Redesigned renderSlots with delete button beside colony name
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -80,7 +81,13 @@ function renderSlots() {
       if (diff > 86400000) timeAgo = Math.floor(diff / 86400000) + 'd ago';
       else if (diff > 3600000) timeAgo = Math.floor(diff / 3600000) + 'h ago';
       else if (diff > 60000) timeAgo = Math.floor(diff / 60000) + 'm ago';
-      html += '<div class="slot-name">🐜 ' + sl.name + '</div><div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div><div class="slot-info" style="margin-top:4px"><span onclick="event.stopPropagation();deleteSlot(' + i + ')" style="color:#ff6666;cursor:pointer">🗑️ Delete</span></div>';
+      html += '<div style="display:flex; align-items:center; justify-content:space-between; width:100%;">' +
+              '<div>' +
+                '<div class="slot-name">🐜 ' + sl.name + '</div>' +
+                '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
+              '</div>' +
+              '<button class="delete-colony-btn" onclick="event.stopPropagation();deleteSlot(' + i + ')" title="Delete colony">🗑️</button>' +
+            '</div>';
     } else {
       html += '<div class="slot-empty">+ New Colony</div>';
     }
@@ -118,7 +125,7 @@ window.deleteSlot = function(slot) {
   }
 };
 
-// ----- Screenshake -----
+// ----- Screenshake (unchanged) -----
 var shakeIntensity = 0, shakeDuration = 0;
 function triggerShake(intensity, duration) {
   if (!GameSettings.shakeOn) return;
@@ -141,7 +148,7 @@ function updateShake(dt) {
   }
 }
 
-// ----- Tutorials -----
+// ----- Tutorials (unchanged) -----
 var tutorialMessages = [
   { id: "firstLoad", condition: function() { return state.level === 1 && state.chambers.foodStorage.count === 0; }, text: "🌾 Build a Food Storage to expand!", duration: 6 },
   { id: "researchBuilt", condition: function() { return state.chambers.research.count === 1 && !state.tutorialsShown.researchBuilt; }, text: "🧬 Upgrades & Shop unlocked. Evolution at Lv" + BAL.evolutionUnlockLevel + ".", duration: 5 },
@@ -178,7 +185,7 @@ function updateTutorial(dt) {
   }
 }
 
-// ----- Zone management -----
+// ----- Zone management (unchanged) -----
 function checkZoneUnlocks() {
   var trips = state.expansionTrips;
   var zoneOrder = ["meadow", "forestEdge", "riverside", "deepWoods", "cave", "swamp", "mountain"];
@@ -211,7 +218,7 @@ function switchZone(zoneId) {
   showToast("Moved to " + cfg.name + "!");
 }
 
-// ----- Evolution purchase -----
+// ----- Evolution purchase (unchanged) -----
 function buyEvolution(type) {
   var evo = EVOLUTION_TREE[type];
   var ct = state.evolution[type] || 0;
@@ -235,7 +242,7 @@ function buyEvolution(type) {
   refreshHUD();
 }
 
-// ----- Ascension upgrade -----
+// ----- Ascension upgrade (unchanged) -----
 function buyAscensionUpgrade(id) {
   var item = null;
   for (var i = 0; i < ASCENSION_SHOP.length; i++) { if (ASCENSION_SHOP[i].id === id) { item = ASCENSION_SHOP[i]; break; } }
@@ -254,14 +261,13 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop -----
+// ----- Main loop (unchanged except rain throttle already fixed) -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 
 function startGameLoop() {
   gameLoopActive = true;
   state.lastTime = performance.now();
   function animate() {
-    // Exit immediately if game is paused (e.g. main menu shown)
     if (!gameLoopActive) {
       animFrameId = null;
       return;
@@ -356,6 +362,7 @@ function startGameLoop() {
 
       if (state.deadSoldiers > 0) { state.soldierRespawnTimer -= dt; if (state.soldierRespawnTimer <= 0) respawnSoldier(); }
 
+      // ... (rest of the loop unchanged) ...
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
         if (sp.stealing && sp.fleeTarget) {
