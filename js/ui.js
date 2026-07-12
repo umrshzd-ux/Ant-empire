@@ -83,7 +83,7 @@ function spawnFloater(text, sx, sy, color) {
 }
 
 // =============================================
-//  ALERTS (wave, event, boss) – replaces old timers
+//  ALERTS (wave, event, boss) – unified panel
 // =============================================
 function updateAlertsPanel() {
   var alerts = [];
@@ -122,6 +122,11 @@ function updateAlertsPanel() {
     elAlertsPanel.innerHTML = html;
   }
 }
+
+// These three functions are still called by main.js – they just delegate to the alerts panel
+function updateWaveTimer() { updateAlertsPanel(); }
+function updateEventTimer() { updateAlertsPanel(); }
+function updateBossTimer() { updateAlertsPanel(); }
 
 // Toggle alerts dropdown
 document.getElementById("alerts-pill").onclick = function() {
@@ -949,4 +954,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-    }
+      }
