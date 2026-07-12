@@ -1,6 +1,6 @@
 // ===== HUD, TOASTS, FLOATERS, MENUS, ACHIEVEMENTS, DAILY, STATS, PRESTIGE/ASCENSION UI =====
 
-var elFood, elFoodCap, elGems, elLevel, elAnts, elEggs, elWaveTimer, elEventTimer, elBossTimer, elPrestige;
+var elFood, elFoodCap, elGems, elAnts, elAlertCount, elAlertsPanel, elResourcesPanel, elMorePanel;
 var toastEl, floatersEl;
 var buildPanel, upgradePanel, shopPanel, achPanel, evoPanel, ppPanel, ascPanel;
 var surgeBtn, eventBtn, summonBtn, rallyBtn, rallyOverlay;
@@ -9,15 +9,15 @@ function initDOMRefs() {
   elFood = document.getElementById("food-count");
   elFoodCap = document.getElementById("food-cap");
   elGems = document.getElementById("gem-count");
-  elLevel = document.getElementById("level-count");
   elAnts = document.getElementById("ant-count");
-  elEggs = document.getElementById("egg-count");
-  elWaveTimer = document.getElementById("wave-timer");
-  elEventTimer = document.getElementById("event-timer");
-  elBossTimer = document.getElementById("boss-timer");
-  elPrestige = document.getElementById("prestige-count");
+  elAlertCount = document.getElementById("alert-count");
+  elAlertsPanel = document.getElementById("alerts-panel");
+  elResourcesPanel = document.getElementById("resources-panel");
+  elMorePanel = document.getElementById("more-panel");
+
   toastEl = document.getElementById("toast");
   floatersEl = document.getElementById("floaters");
+
   buildPanel = document.getElementById("build-panel");
   upgradePanel = document.getElementById("upgrade-panel");
   shopPanel = document.getElementById("shop-panel");
@@ -25,6 +25,7 @@ function initDOMRefs() {
   evoPanel = document.getElementById("evolution-panel");
   ppPanel = document.getElementById("prestige-shop-panel");
   ascPanel = document.getElementById("ascension-shop-panel");
+
   surgeBtn = document.getElementById("surge-btn");
   eventBtn = document.getElementById("event-btn");
   summonBtn = document.getElementById("summon-btn");
@@ -81,56 +82,113 @@ function spawnFloater(text, sx, sy, color) {
   setTimeout(function() { f.remove(); }, 1150);
 }
 
+// =============================================
+//  ALERTS (wave, event, boss) – replaces old timers
+// =============================================
+function updateAlertsPanel() {
+  var alerts = [];
+  if (state.waveActive) {
+    alerts.push({ text: "⚠️ Wave in progress", color: "#ffaa00" });
+  } else {
+    var waveSec = Math.ceil(state.waveTimer);
+    alerts.push({ text: "Wave in " + waveSec + "s", color: "#ffaa00" });
+  }
+  if (state.eventActive) {
+    alerts.push({ text: "🎲 Event active", color: "#4488ff" });
+  } else {
+    var eventSec = Math.ceil(state.eventTimer);
+    if (eventSec <= 15) alerts.push({ text: "Event in " + eventSec + "s", color: "#4488ff" });
+  }
+  if (state.bossActive) {
+    alerts.push({ text: "💀 Boss fight!", color: "#cc0000" });
+  } else {
+    var totalSec = Math.ceil(state.bossTimer);
+    if (totalSec <= 30) alerts.push({ text: "Boss in " + totalSec + "s", color: "#cc0000" });
+    else {
+      var mins = Math.floor(totalSec / 60);
+      var secs = totalSec % 60;
+      alerts.push({ text: "Boss in " + mins + "m " + (secs < 10 ? "0" : "") + secs + "s", color: "#cc0000" });
+    }
+  }
+
+  var count = alerts.length;
+  elAlertCount.textContent = count;
+  if (elAlertsPanel.style.display === 'flex') {
+    var html = '';
+    for (var i = 0; i < alerts.length; i++) {
+      html += '<div class="alert-item" style="color:' + alerts[i].color + ';">' + alerts[i].text + '</div>';
+    }
+    if (alerts.length === 0) html = '<div class="alert-item" style="color:#aaa;">No alerts</div>';
+    elAlertsPanel.innerHTML = html;
+  }
+}
+
+// Toggle alerts dropdown
+document.getElementById("alerts-pill").onclick = function() {
+  AudioManager.sfx.buttonClick();
+  if (elAlertsPanel.style.display === 'flex') {
+    elAlertsPanel.style.display = 'none';
+  } else {
+    elResourcesPanel.style.display = 'none';
+    elAlertsPanel.style.display = 'flex';
+    updateAlertsPanel();
+  }
+};
+
+// =============================================
+//  RESOURCES POPUP (eggs, VW, fire, PP, AP, level)
+// =============================================
+function updateResourcesPopup() {
+  document.getElementById("res-eggs").textContent = state.eggs;
+  document.getElementById("res-vw").textContent = state.virtualWorkers;
+  document.getElementById("res-streak").textContent = "🔥" + state.dailyStreak;
+  document.getElementById("res-pp").textContent = state.prestigePoints + " PP";
+  document.getElementById("res-ap").textContent = state.ascensionPoints + " AP";
+  document.getElementById("res-level").textContent = state.level;
+}
+
+document.getElementById("resources-pill").onclick = function() {
+  AudioManager.sfx.buttonClick();
+  if (elResourcesPanel.style.display === 'flex') {
+    elResourcesPanel.style.display = 'none';
+  } else {
+    elAlertsPanel.style.display = 'none';
+    elResourcesPanel.style.display = 'flex';
+    updateResourcesPopup();
+  }
+};
+
+// =============================================
+//  HUD UPDATE – simplified
+// =============================================
 function refreshHUD() {
   elFood.textContent = Math.floor(state.food);
   elFoodCap.textContent = state.foodCap;
   elGems.textContent = Math.floor(state.gems);
-  elLevel.textContent = state.level;
   elAnts.textContent = state.workerCount + state.soldierCount + state.scoutCount;
-  elEggs.textContent = state.eggs;
-  elPrestige.textContent = state.prestigePoints + " PP";
-  document.getElementById('virtual-display').textContent = state.virtualWorkers;
-  document.getElementById('ascend-points').textContent = state.ascensionPoints + " AP";
-  var apill = document.getElementById('ascend-pill');
-  apill.style.display = (state.prestigeCount >= BAL.ascendUnlockPrestige && !state.bossActive) ? 'flex' : 'none';
+  document.getElementById('zone-display').textContent = ZONE_CONFIG[state.currentZone] ? ZONE_CONFIG[state.currentZone].label : '🌳Forest';
+  // The alerts badge is updated via updateAlertsPanel called from main loop
 }
 
-function updateWaveTimer() {
-  if (state.waveActive) {
-    elWaveTimer.textContent = "⚠️" + state.waveSpidersRemaining;
-    elWaveTimer.parentElement.style.borderColor = "#aa3333";
+// =============================================
+//  "MORE" PANEL
+// =============================================
+function toggleMorePanel() {
+  if (elMorePanel.style.display === 'flex') {
+    elMorePanel.style.display = 'none';
   } else {
-    var sec = Math.ceil(state.waveTimer);
-    elWaveTimer.textContent = "Wave " + sec + "s";
-    elWaveTimer.parentElement.style.borderColor = sec < 10 ? "#aa3333" : "";
-  }
-}
-function updateEventTimer() {
-  if (state.eventActive) {
-    elEventTimer.textContent = "🎲Active";
-    elEventTimer.parentElement.style.borderColor = "#4488ff";
-  } else {
-    var sec = Math.ceil(state.eventTimer);
-    elEventTimer.textContent = "Event " + sec + "s";
-    elEventTimer.parentElement.style.borderColor = sec < 10 ? "#4488ff" : "";
-  }
-}
-function updateBossTimer() {
-  if (!elBossTimer) return;   // safety check
-  if (state.bossActive) {
-    elBossTimer.textContent = "💀Boss!";
-    elBossTimer.parentElement.style.borderColor = "#cc0000";
-  } else {
-    var totalSec = Math.ceil(state.bossTimer);
-    var mins = Math.floor(totalSec / 60);
-    var secs = totalSec % 60;
-    var display = mins > 0 ? mins + "m " + (secs < 10 ? "0" : "") + secs + "s" : secs + "s";
-    elBossTimer.textContent = "Boss " + display;
-    elBossTimer.parentElement.style.borderColor = totalSec < 10 ? "#cc0000" : "";
+    elMorePanel.style.display = 'flex';
   }
 }
 
-// Achievements
+document.getElementById("btn-more").onclick = function() {
+  AudioManager.sfx.buttonClick();
+  toggleMorePanel();
+};
+
+// =============================================
+//  ACHIEVEMENTS (unchanged)
+// =============================================
 function checkAchievements() {
   for (var i = 0; i < ACHIEVEMENTS.length; i++) {
     var ach = ACHIEVEMENTS[i];
@@ -264,7 +322,7 @@ function refreshAchievementsUI() {
   list.innerHTML = html;
 }
 
-// Daily challenges
+// Daily challenges (unchanged)
 function getDailyChallengeById(id) {
   for (var i = 0; i < DAILY_CHALLENGE_POOL.length; i++) { if (DAILY_CHALLENGE_POOL[i].id === id) return DAILY_CHALLENGE_POOL[i]; }
   return null;
@@ -304,7 +362,7 @@ function updateDailyProgress(type, amount) {
   refreshDailyUI();
 }
 
-// Lifetime stats
+// Lifetime stats (unchanged)
 function refreshStatsUI() {
   var el = document.getElementById('stats-content');
   if (!el) return;
@@ -329,7 +387,7 @@ function refreshStatsUI() {
 }
 function formatNum(n) { if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return (n / 1000).toFixed(1) + 'K'; return Math.floor(n).toString(); }
 
-// Prestige roadmap
+// Prestige roadmap (unchanged)
 function refreshRoadmapUI() {
   var el = document.getElementById('roadmap-content');
   if (!el) return;
@@ -342,7 +400,7 @@ function refreshRoadmapUI() {
   el.innerHTML = html;
 }
 
-// Offline progress
+// Offline progress (unchanged)
 function calculateOfflineProgress() {
   var now = Date.now();
   var elapsed = (now - state.lastSaveTime) / 1000;
@@ -390,7 +448,7 @@ function showOfflineModal(data) {
   };
 }
 
-// Daily login
+// Daily login (unchanged)
 function getTodayString() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
 function checkDailyLogin() {
   closeAllModals();
@@ -434,7 +492,7 @@ function checkDailyLogin() {
 }
 function updateStreakDisplay() { var el = document.getElementById('streak-display'); if (el) el.textContent = "🔥" + state.dailyStreak; }
 
-// Prestige modal
+// Prestige modal (unchanged)
 function showPrestigeModal() {
   closeAllModals();
   if (state.level < BAL.prestigeLevelReq) { showToast("Reach Level " + BAL.prestigeLevelReq + " to prestige!"); return; }
@@ -496,7 +554,7 @@ function performPrestige(ppGain) {
   refreshHUD(); checkAchievements(); saveGame();
 }
 
-// Ascension modal
+// Ascension modal (unchanged)
 function showAscendModal() {
   if (state.prestigeCount < BAL.ascendUnlockPrestige) { showToast("Reach Prestige " + BAL.ascendUnlockPrestige + " to unlock Ascension!"); return; }
   if (state.bossActive) { showToast("Defeat the boss first!"); return; }
@@ -573,7 +631,7 @@ function clearAllMeshes() {
   document.getElementById('boss-health-bar').style.display = 'none';
 }
 
-// Ascension shop UI
+// Ascension shop UI (unchanged)
 function refreshAscensionShopUI() {
   var list = document.getElementById('ascension-shop-list');
   if (!list) return;
@@ -589,7 +647,7 @@ function refreshAscensionShopUI() {
 }
 window._buyAsc = buyAscensionUpgrade;
 
-// Prestige shop UI
+// Prestige shop UI (unchanged)
 function refreshPrestigeShopUI() {
   var list = document.getElementById('prestige-shop-list');
   if (!list) return;
@@ -620,7 +678,7 @@ function buyPrestigeUpgrade(id) {
 }
 window._buyPP = buyPrestigeUpgrade;
 
-// Evolution UI
+// Evolution UI (unchanged)
 function refreshEvolutionUI() {
   var list = document.getElementById('evo-list');
   if (!list) return;
@@ -648,7 +706,7 @@ function refreshEvolutionUI() {
 }
 window._buyEvo = buyEvolution;
 
-// Upgrade UI
+// Upgrade UI (unchanged)
 function refreshUpgradeUI() {
   function fmt(type) { var lv = state.upgrades[type], max = UPGRADES[type].maxLevel; var cost = lv < max ? getUpgradeCost(type) : 0; return "Lv" + lv + "/" + max + (lv < max ? " " + cost + "🌾" : " MAX"); }
   document.getElementById("upg-damage").textContent = fmt("soldierDamage");
@@ -661,7 +719,7 @@ function refreshUpgradeUI() {
   document.getElementById("btn-upg-cap").disabled = state.upgrades.foodCap >= UPGRADES.foodCap.maxLevel;
 }
 
-// Build buttons
+// Build buttons (unchanged)
 function updateBuildButtons() {
   var bfs = document.getElementById("build-food-storage"), bn = document.getElementById("build-nursery"),
       bs = document.getElementById("build-soldier"), br = document.getElementById("build-research"),
@@ -755,7 +813,9 @@ function buildScoutChamber() {
   showToast("Scout +1"); refreshHUD(); updateBuildButtons(); checkAchievements();
 }
 
-// Setup all buttons
+// =============================================
+//  BUTTON SETUP for decluttered UI
+// =============================================
 function setupButtons() {
   buildPanel = document.getElementById("build-panel");
   upgradePanel = document.getElementById("upgrade-panel");
@@ -769,26 +829,84 @@ function setupButtons() {
     [buildPanel, upgradePanel, shopPanel, achPanel, evoPanel, ppPanel, ascPanel].forEach(function(p) { if (p) p.classList.remove("open"); });
   }
 
-  var btnBuild = document.getElementById("btn-build"); if (btnBuild) btnBuild.onclick = function() { AudioManager.sfx.buttonClick(); if (buildPanel && buildPanel.classList.contains("open")) { buildPanel.classList.remove("open"); } else { closeAllPanels(); if (buildPanel) { buildPanel.classList.add("open"); updateBuildButtonLabels(); } } };
-  var btnEvo = document.getElementById("btn-evolution"); if (btnEvo) btnEvo.onclick = function() { AudioManager.sfx.buttonClick(); if (evoPanel && evoPanel.classList.contains("open")) { evoPanel.classList.remove("open"); } else { closeAllPanels(); if (evoPanel) { evoPanel.classList.add("open"); refreshEvolutionUI(); } } };
-  var btnUpgrades = document.getElementById("btn-upgrades"); if (btnUpgrades) btnUpgrades.onclick = function() { AudioManager.sfx.buttonClick(); if (upgradePanel && upgradePanel.classList.contains("open")) { upgradePanel.classList.remove("open"); } else { closeAllPanels(); if (upgradePanel) { upgradePanel.classList.add("open"); refreshUpgradeUI(); } } };
-  var btnShop = document.getElementById("btn-shop"); if (btnShop) btnShop.onclick = function() { AudioManager.sfx.buttonClick(); if (shopPanel && shopPanel.classList.contains("open")) { shopPanel.classList.remove("open"); } else { closeAllPanels(); if (shopPanel) shopPanel.classList.add("open"); } };
-  var btnAch = document.getElementById("btn-achievements"); if (btnAch) btnAch.onclick = function() { AudioManager.sfx.buttonClick(); if (achPanel && achPanel.classList.contains("open")) { achPanel.classList.remove("open"); } else { closeAllPanels(); if (achPanel) { achPanel.classList.add("open"); refreshAchievementsUI(); } } };
-  var btnPP = document.getElementById("btn-prestige-shop"); if (btnPP) btnPP.onclick = function() { AudioManager.sfx.buttonClick(); if (ppPanel && ppPanel.classList.contains("open")) { ppPanel.classList.remove("open"); } else { closeAllPanels(); if (ppPanel) { ppPanel.classList.add("open"); refreshPrestigeShopUI(); } } };
-  var btnAscShop = document.getElementById("btn-ascension-shop"); if (btnAscShop) btnAscShop.onclick = function() { AudioManager.sfx.buttonClick(); if (ascPanel && ascPanel.classList.contains("open")) { ascPanel.classList.remove("open"); } else { closeAllPanels(); if (ascPanel) { ascPanel.classList.add("open"); refreshAscensionShopUI(); } } };
-  var btnDaily = document.getElementById("btn-daily"); if (btnDaily) btnDaily.onclick = function() { AudioManager.sfx.buttonClick(); var dp = document.getElementById('daily-panel'); dp.style.display = dp.style.display === 'flex' ? 'none' : 'flex'; refreshDailyUI(); };
+  // Build
+  document.getElementById("btn-build").onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (buildPanel.classList.contains("open")) { buildPanel.classList.remove("open"); } else { closeAllPanels(); buildPanel.classList.add("open"); updateBuildButtonLabels(); }
+  };
+  // Upgrade
+  document.getElementById("btn-upgrades").onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (upgradePanel.classList.contains("open")) { upgradePanel.classList.remove("open"); } else { closeAllPanels(); upgradePanel.classList.add("open"); refreshUpgradeUI(); }
+  };
+  // Shop
+  document.getElementById("btn-shop").onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (shopPanel.classList.contains("open")) { shopPanel.classList.remove("open"); } else { closeAllPanels(); shopPanel.classList.add("open"); }
+  };
+  // Evolution (inside More)
+  var btnEvo = document.getElementById("btn-evolution");
+  if (btnEvo) btnEvo.onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (evoPanel.classList.contains("open")) { evoPanel.classList.remove("open"); } else { closeAllPanels(); evoPanel.classList.add("open"); refreshEvolutionUI(); }
+  };
+  // Achievements (inside More)
+  var btnAch = document.getElementById("btn-achievements");
+  if (btnAch) btnAch.onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (achPanel.classList.contains("open")) { achPanel.classList.remove("open"); } else { closeAllPanels(); achPanel.classList.add("open"); refreshAchievementsUI(); }
+  };
+  // Prestige shop (inside More)
+  var btnPP = document.getElementById("btn-prestige-shop");
+  if (btnPP) btnPP.onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (ppPanel.classList.contains("open")) { ppPanel.classList.remove("open"); } else { closeAllPanels(); ppPanel.classList.add("open"); refreshPrestigeShopUI(); }
+  };
+  // Ascension shop (inside More)
+  var btnAsc = document.getElementById("btn-ascension-shop");
+  if (btnAsc) btnAsc.onclick = function() {
+    AudioManager.sfx.buttonClick();
+    if (ascPanel.classList.contains("open")) { ascPanel.classList.remove("open"); } else { closeAllPanels(); ascPanel.classList.add("open"); refreshAscensionShopUI(); }
+  };
+  // Daily (inside More)
+  document.getElementById("btn-daily").onclick = function() {
+    AudioManager.sfx.buttonClick();
+    var dp = document.getElementById('daily-panel');
+    dp.style.display = dp.style.display === 'flex' ? 'none' : 'flex';
+    refreshDailyUI();
+  };
 
+  // Camera buttons (inside More)
+  document.getElementById("btn-surface").onclick = function() { flyToPreset("surface"); };
+  document.getElementById("btn-tunnel").onclick = function() { flyToPreset("tunnel"); };
+  document.getElementById("btn-orbit").onclick = function() { flyToPreset("orbit"); };
+
+  // Zone pill
+  document.getElementById("zone-pill").onclick = function() {
+    AudioManager.sfx.buttonClick();
+    var zones = state.unlockedZonesList;
+    if (zones.length <= 1) { showToast("Explore more to unlock new zones!"); return; }
+    var idx = zones.indexOf(state.currentZone);
+    var nextIdx = (idx + 1) % zones.length;
+    switchZone(zones[nextIdx]);
+  };
+  // Menu button
+  document.getElementById("btn-menu-ingame").onclick = function() { AudioManager.sfx.buttonClick(); showMainMenu(); };
+
+  // Build chamber buttons
   document.getElementById("build-food-storage").onclick = buildFoodStorageChamber;
   document.getElementById("build-nursery").onclick = buildNurseryChamber;
   document.getElementById("build-soldier").onclick = buildSoldierChamber;
   document.getElementById("build-research").onclick = buildResearchChamber;
   document.getElementById("build-scout").onclick = buildScoutChamber;
 
+  // Upgrade buy buttons
   document.getElementById("btn-upg-damage").onclick = function() { buyUpgrade("soldierDamage"); };
   document.getElementById("btn-upg-speed").onclick = function() { buyUpgrade("workerSpeed"); };
   document.getElementById("btn-upg-egg").onclick = function() { buyUpgrade("eggLayTime"); };
   document.getElementById("btn-upg-cap").onclick = function() { buyUpgrade("foodCap"); };
 
+  // Gem shop buttons
   var shopBtns = ["golden", "armor", "bless", "map", "boost", "hatch", "skin"];
   for (var si = 0; si < shopBtns.length; si++) {
     var sid = shopBtns[si];
@@ -796,10 +914,7 @@ function setupButtons() {
     if (btn) btn.onclick = function(id) { return function() { buyGemItem(id); }; }(sid);
   }
 
-  document.getElementById("prestige-pill").onclick = function() { AudioManager.sfx.buttonClick(); showPrestigeModal(); };
-  document.getElementById("ascend-pill").onclick = function() { AudioManager.sfx.buttonClick(); showAscendModal(); };
-  document.getElementById("zone-pill").onclick = function() { AudioManager.sfx.buttonClick(); var zones = state.unlockedZonesList; if (zones.length <= 1) { showToast("Explore more to unlock new zones!"); return; } var idx = zones.indexOf(state.currentZone); var nextIdx = (idx + 1) % zones.length; switchZone(zones[nextIdx]); };
-  document.getElementById("btn-menu-ingame").onclick = function() { AudioManager.sfx.buttonClick(); showMainMenu(); };
+  // Settings, stats, roadmap, howtoplay, about (unchanged)
   document.getElementById("btn-settings-menu").onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('settings-panel').style.display = 'flex'; };
   document.getElementById("btn-stats-menu").onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('stats-panel').style.display = 'flex'; refreshStatsUI(); };
   document.getElementById("btn-roadmap-menu").onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('roadmap-panel').style.display = 'flex'; refreshRoadmapUI(); };
@@ -816,10 +931,22 @@ function setupButtons() {
   document.getElementById("toggle-ambient").onclick = function() { GameSettings.ambientOn = !GameSettings.ambientOn; AudioManager.setAmbient(GameSettings.ambientOn); this.className = 'toggle-switch' + (GameSettings.ambientOn ? ' on' : ''); };
   document.getElementById("toggle-shake").onclick = function() { GameSettings.shakeOn = !GameSettings.shakeOn; localStorage.setItem('antEmpire_shake', GameSettings.shakeOn ? '1' : '0'); this.className = 'toggle-switch' + (GameSettings.shakeOn ? ' on' : ''); };
 
+  // Show/hide buttons based on game state
   updateBuildButtons();
-  if (state.chambers.research.count > 0) { ["btn-upgrades","btn-shop","btn-achievements","btn-daily"].forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = "inline-block"; }); if (state.level >= BAL.evolutionUnlockLevel) { var evoBtn = document.getElementById("btn-evolution"); if (evoBtn) evoBtn.style.display = "inline-block"; } }
-  if (state.prestigeCount > 0) { var ppBtn = document.getElementById("btn-prestige-shop"); if (ppBtn) ppBtn.style.display = "inline-block"; }
-  if (state.prestigeCount >= BAL.ascendUnlockPrestige || state.ascensionCount > 0) { var ascBtn = document.getElementById("btn-ascension-shop"); if (ascBtn) ascBtn.style.display = "inline-block"; }
-  for (var si = 0; si < shopBtns.length; si++) { var sid = shopBtns[si]; if (GEM_ITEMS[sid] && GEM_ITEMS[sid].oneTime && state.gemUpgrades[sid]) { var btn = document.getElementById("btn-shop-" + sid); if (btn) { btn.disabled = true; btn.textContent = "Owned"; } } }
+  document.getElementById("btn-evolution").style.display = (state.level >= BAL.evolutionUnlockLevel) ? "inline-block" : "none";
+  document.getElementById("btn-prestige-shop").style.display = (state.prestigeCount > 0) ? "inline-block" : "none";
+  document.getElementById("btn-ascension-shop").style.display = (state.prestigeCount >= BAL.ascendUnlockPrestige || state.ascensionCount > 0) ? "inline-block" : "none";
+  // Camera buttons always visible in More panel
+  document.getElementById("btn-surface").style.display = "inline-block";
+  document.getElementById("btn-tunnel").style.display = "inline-block";
+  document.getElementById("btn-orbit").style.display = "inline-block";
+
+  for (var si = 0; si < shopBtns.length; si++) {
+    var sid = shopBtns[si];
+    if (GEM_ITEMS[sid] && GEM_ITEMS[sid].oneTime && state.gemUpgrades[sid]) {
+      var btn = document.getElementById("btn-shop-" + sid);
+      if (btn) { btn.disabled = true; btn.textContent = "Owned"; }
+    }
+  }
   refreshUpgradeUI(); refreshAscensionShopUI();
     }
