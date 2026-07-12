@@ -178,7 +178,7 @@ html, body {
 canvas { display: block; }
 
 /* ============================================================
-   HUD PILLS (unchanged)
+   HUD PILLS (unchanged styling but fewer elements)
    ============================================================ */
 #hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex;
@@ -197,36 +197,76 @@ canvas { display: block; }
 .resource-pill.clickable:active { transform: scale(0.95); }
 .resource-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
 .icon-food { background: linear-gradient(135deg, #d6a85a, #a87830); }
-.icon-level { background: linear-gradient(135deg, #7fae5a, #4d7a2e); }
 .icon-gem { background: linear-gradient(135deg, #e040fb, #9020c0); }
-.icon-wave, .icon-event, .icon-boss, .icon-prestige, .icon-virtual, .icon-daily, .icon-ascend { background: #444; color: #fff; }
+.icon-alert { background: #aa3333; }
 #top-left, #top-right { display: flex; flex-direction: column; gap: 4px; }
 
 /* ============================================================
-   BOTTOM BAR
+   ALERTS DROPDOWN
+   ============================================================ */
+#alerts-panel {
+  position: absolute; top: 50px; left: 8px; z-index: 40;
+  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  border: 2px solid rgba(200,150,80,0.6);
+  border-radius: 16px; padding: 12px; display: none; flex-direction: column; gap: 6px;
+  min-width: 200px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
+  backdrop-filter: blur(8px);
+}
+#alerts-panel .alert-item {
+  font-size: 13px; color: #f3e3c4; padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ============================================================
+   RESOURCES POPUP
+   ============================================================ */
+#resources-panel {
+  position: absolute; top: 50px; right: 8px; z-index: 40;
+  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  border: 2px solid rgba(200,150,80,0.6);
+  border-radius: 16px; padding: 12px; display: none; flex-direction: column; gap: 6px;
+  min-width: 180px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
+  backdrop-filter: blur(8px);
+}
+#resources-panel .resource-row {
+  display: flex; justify-content: space-between; font-size: 13px; color: #f3e3c4;
+}
+
+/* ============================================================
+   BOTTOM BAR (decluttered)
    ============================================================ */
 #bottom-bar {
   position: absolute; bottom: 0; left: 0; right: 0; display: flex;
-  justify-content: center; gap: 8px; padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  justify-content: center; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   pointer-events: none; z-index: 20; flex-wrap: wrap;
 }
 .cam-btn, .build-btn, .rally-btn, .menu-btn-sm {
   pointer-events: auto;
   background: linear-gradient(180deg, rgba(60,35,18,0.92), rgba(22,12,5,0.92));
   border: 1px solid rgba(200,150,80,0.5);
-  color: #f3e3c4; border-radius: 14px; padding: 9px 14px; font-size: 11px; font-weight: 700;
-  text-align: center; min-width: 50px; cursor: pointer;
+  color: #f3e3c4; border-radius: 14px; padding: 8px 12px; font-size: 12px; font-weight: 700;
+  text-align: center; min-width: 44px; cursor: pointer;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.15);
   transition: transform 0.1s, box-shadow 0.1s;
+  display: inline-block;
 }
 .cam-btn:active, .build-btn:active, .rally-btn:active, .menu-btn-sm:active {
   transform: scale(0.92); box-shadow: 0 1px 4px rgba(0,0,0,0.6), inset 0 2px 5px rgba(0,0,0,0.3);
 }
-.rally-btn .cooldown-overlay {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7); border-radius: 14px; display: flex;
-  align-items: center; justify-content: center; font-size: 14px; color: #aaa;
-  pointer-events: none;   /* <-- FIX: allows clicks to pass through to the button */
+.rally-btn .cooldown-overlay { pointer-events: none; }
+
+/* "More" panel */
+#more-panel {
+  position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 30;
+  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  border: 2px solid rgba(200,150,80,0.6);
+  border-radius: 16px; padding: 10px; display: none; gap: 6px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
+  backdrop-filter: blur(8px);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ============================================================
@@ -309,7 +349,7 @@ canvas { display: block; }
   text-shadow: 0 2px 4px rgba(0,0,0,0.6); letter-spacing: 1px;
 }
 
-/* Save slots – premium card, with delete button */
+/* Save slots – premium card */
 .save-slot {
   width: 290px;
   background: linear-gradient(180deg, rgba(55,30,15,0.9), rgba(25,12,6,0.9));
@@ -650,25 +690,56 @@ canvas { display: block; }
   </div>
 </div>
 
-<!-- HUD -->
+<!-- ========== DECLUTTERED HUD ========== -->
 <div id="hud" style="display:none">
   <div id="top-left">
     <div class="resource-pill"><div class="resource-icon icon-food">🌾</div><span id="food-count">0</span>/<span id="food-cap">30</span></div>
     <div class="resource-pill"><div class="resource-icon icon-gem">💎</div><span id="gem-count">0</span></div>
-    <div class="resource-pill"><span id="wave-timer">--</span></div>
-    <div class="resource-pill"><span id="event-timer">--</span></div>
-    <div class="resource-pill"><span id="boss-timer">--</span></div>
-    <div class="resource-pill"><span id="level-count">1</span> ⭐</div>
+    <div class="resource-pill clickable" id="alerts-pill" style="position:relative;">
+      🔔 <span id="alert-count">0</span>
+    </div>
   </div>
   <div id="top-right">
-    <div class="resource-pill"><span id="ant-count">3</span>🐜</div><div class="resource-pill"><span id="egg-count">0</span>🥚</div>
-    <div class="resource-pill"><span id="virtual-display">0</span>VW</div>
-    <div class="resource-pill"><span id="streak-display">🔥1</span></div>
-    <div class="resource-pill clickable" id="prestige-pill">✨ <span id="prestige-count">0PP</span></div>
-    <div class="resource-pill clickable" id="ascend-pill" style="display:none">⬆️ <span id="ascend-points">0AP</span></div>
+    <div class="resource-pill"><span id="ant-count">3</span>🐜</div>
     <div class="resource-pill clickable" id="zone-pill"><span id="zone-display">🌳Forest</span></div>
+    <div class="resource-pill clickable" id="resources-pill">📊</div>
     <button class="menu-btn-sm" id="btn-menu-ingame" style="pointer-events:auto;font-size:10px;padding:4px 8px">☰</button>
   </div>
+</div>
+
+<!-- Alerts dropdown -->
+<div id="alerts-panel"></div>
+
+<!-- Resources popup -->
+<div id="resources-panel">
+  <div class="resource-row"><span>🥚 Eggs</span><span id="res-eggs">0</span></div>
+  <div class="resource-row"><span>⚡ Virtual Workers</span><span id="res-vw">0</span></div>
+  <div class="resource-row"><span>🔥 Streak</span><span id="res-streak">🔥1</span></div>
+  <div class="resource-row"><span>✨ Prestige Points</span><span id="res-pp">0 PP</span></div>
+  <div class="resource-row"><span>⬆️ Ascension Points</span><span id="res-ap">0 AP</span></div>
+  <div class="resource-row"><span>⭐ Level</span><span id="res-level">1</span></div>
+</div>
+
+<!-- Bottom bar – only primary actions + More button -->
+<div id="bottom-bar" style="display:none">
+  <div class="cam-btn" id="btn-view">🏠 View</div>
+  <div class="build-btn" id="btn-build">🔨Build</div>
+  <div class="build-btn" id="btn-upgrades">⬆Upgrade</div>
+  <div class="build-btn" id="btn-shop">💎Shop</div>
+  <div class="rally-btn" id="btn-rally">⚡Rally<div class="cooldown-overlay" style="display:none"></div></div>
+  <div class="build-btn" id="btn-more">☰ More</div>
+</div>
+
+<!-- "More" panel for secondary actions -->
+<div id="more-panel">
+  <button class="build-btn" id="btn-evolution" style="display:none">🧬Evolve</button>
+  <button class="build-btn" id="btn-achievements">🏆Feats</button>
+  <button class="build-btn" id="btn-prestige-shop" style="display:none">✨Prestige</button>
+  <button class="build-btn" id="btn-ascension-shop" style="display:none">⬆Ascension</button>
+  <button class="build-btn" id="btn-daily">📋Daily</button>
+  <button class="cam-btn" id="btn-surface" style="display:none">Surface</button>
+  <button class="cam-btn" id="btn-tunnel" style="display:none">Tunnel</button>
+  <button class="cam-btn" id="btn-orbit" style="display:none">Orbit</button>
 </div>
 
 <div id="toast"></div><div id="floaters"></div><div id="tutorial-toast"></div>
@@ -723,17 +794,6 @@ canvas { display: block; }
 <div id="surge-btn">👑 Fertile Surge!</div>
 <div id="event-btn">🎲 Random Event!</div>
 <div id="summon-btn">💀 Summon Boss (5💎)</div>
-
-<div id="bottom-bar" style="display:none">
-  <div class="cam-btn" id="btn-surface">Surface</div><div class="cam-btn" id="btn-tunnel">Tunnel</div><div class="cam-btn" id="btn-orbit">Orbit</div>
-  <div class="build-btn" id="btn-build">🔨Build</div><div class="build-btn" id="btn-evolution" style="display:none">🧬Evolve</div>
-  <div class="build-btn" id="btn-upgrades" style="display:none">🧪Upgrade</div><div class="build-btn" id="btn-shop" style="display:none">💎Shop</div>
-  <div class="build-btn" id="btn-achievements" style="display:none">🏆Feats</div>
-  <div class="build-btn" id="btn-prestige-shop" style="display:none">✨Prestige</div>
-  <div class="build-btn" id="btn-ascension-shop" style="display:none">⬆️Ascension</div>
-  <div class="build-btn" id="btn-daily" style="display:none">📋Daily</div>
-  <div class="rally-btn" id="btn-rally">⚡Rally<div class="cooldown-overlay" style="display:none"></div></div>
-</div>
 
 <!-- BUILD PANEL -->
 <div id="build-panel" class="game-panel">
@@ -798,21 +858,21 @@ canvas { display: block; }
 })();
 </script>
 
-<script src="js/three.min.js?v=premium5"></script>
-<script src="js/audio.js?v=premium5"></script>
-<script src="js/config.js?v=premium5"></script>
-<script src="js/state.js?v=premium5"></script>
-<script src="js/terrain.js?v=premium5"></script>
-<script src="js/main.js?v=premium5"></script>
-<script src="js/camera.js?v=premium5"></script>
-<script src="js/chambers.js?v=premium5"></script>
-<script src="js/ants.js?v=premium5"></script>
-<script src="js/enemies.js?v=premium5"></script>
-<script src="js/combat.js?v=premium5"></script>
-<script src="js/abilities.js?v=premium5"></script>
-<script src="js/ui.js?v=premium5"></script>
-<script src="js/shop.js?v=premium5"></script>
-<script src="js/upgrades.js?v=premium5"></script>
+<script src="js/three.min.js?v=final1"></script>
+<script src="js/audio.js?v=final1"></script>
+<script src="js/config.js?v=final1"></script>
+<script src="js/state.js?v=final1"></script>
+<script src="js/terrain.js?v=final1"></script>
+<script src="js/main.js?v=final1"></script>
+<script src="js/camera.js?v=final1"></script>
+<script src="js/chambers.js?v=final1"></script>
+<script src="js/ants.js?v=final1"></script>
+<script src="js/enemies.js?v=final1"></script>
+<script src="js/combat.js?v=final1"></script>
+<script src="js/abilities.js?v=final1"></script>
+<script src="js/ui.js?v=final1"></script>
+<script src="js/shop.js?v=final1"></script>
+<script src="js/upgrades.js?v=final1"></script>
 
 <script>
   window.onerror = function(msg, url, line) {
@@ -889,4 +949,4 @@ canvas { display: block; }
   })();
 </script>
 </body>
-                                                                                                                                  </html>
+                    </html>
