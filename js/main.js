@@ -1,7 +1,7 @@
 // ===== MAIN ENTRY POINT =====
 
 var container, scene, camera, renderer, hLight, sLight, fLight, raycaster;
-var gameLoopActive = false;   // flag to stop loop when in menu
+var gameLoopActive = false;
 
 function initThreeJS() {
   container = document.getElementById("canvas-container");
@@ -34,21 +34,25 @@ function initThreeJS() {
   raycaster = new THREE.Raycaster();
 }
 
-// ----- Main menu functions (updated) -----
+// ----- Main menu functions -----
 function showMainMenu() {
-  // Stop the game loop completely
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
   }
   gameLoopActive = false;
 
+  // ---- FIX: prevent offline rewards after short menu visit ----
+  state.lastSaveTime = Date.now();
+  saveGame();
+  // ----------------------------------------------------------
+
   document.getElementById('main-menu').style.display = 'flex';
   document.getElementById('hud').style.display = 'none';
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('canvas-container').style.display = 'none';
 
-  // Clear any leftover game toasts, floaters, tutorials
+  // Clear leftovers
   var toastEl = document.getElementById('toast');
   if (toastEl) { toastEl.style.opacity = '0'; toastEl.textContent = ''; }
   var floatersEl = document.getElementById('floaters');
@@ -57,7 +61,6 @@ function showMainMenu() {
   if (tutEl) tutEl.style.opacity = '0';
   var achEl = document.getElementById('achievement-toast');
   if (achEl) achEl.style.opacity = '0';
-  // Also close any open modals to avoid overlap
   closeAllModals();
 
   renderSlots();
@@ -110,6 +113,8 @@ window.loadSlot = function(slot) {
   initGameSystems();
   startGameLoop();
   AudioManager.sfx.buttonClick();
+  // Force boss timer update
+  updateBossTimer();
   setTimeout(function() {
     var offlineData = calculateOfflineProgress();
     if (offlineData && (offlineData.food > 0 || offlineData.eggs > 0 || offlineData.gems > 0)) {
@@ -125,7 +130,7 @@ window.deleteSlot = function(slot) {
   }
 };
 
-// ----- Screenshake (unchanged) -----
+// ----- Screenshake -----
 var shakeIntensity = 0, shakeDuration = 0;
 function triggerShake(intensity, duration) {
   if (!GameSettings.shakeOn) return;
@@ -148,7 +153,7 @@ function updateShake(dt) {
   }
 }
 
-// ----- Tutorials (unchanged) -----
+// ----- Tutorials -----
 var tutorialMessages = [
   { id: "firstLoad", condition: function() { return state.level === 1 && state.chambers.foodStorage.count === 0; }, text: "🌾 Build a Food Storage to expand!", duration: 6 },
   { id: "researchBuilt", condition: function() { return state.chambers.research.count === 1 && !state.tutorialsShown.researchBuilt; }, text: "🧬 Upgrades & Shop unlocked. Evolution at Lv" + BAL.evolutionUnlockLevel + ".", duration: 5 },
@@ -185,7 +190,7 @@ function updateTutorial(dt) {
   }
 }
 
-// ----- Zone management (unchanged) -----
+// ----- Zone management -----
 function checkZoneUnlocks() {
   var trips = state.expansionTrips;
   var zoneOrder = ["meadow", "forestEdge", "riverside", "deepWoods", "cave", "swamp", "mountain"];
@@ -218,7 +223,7 @@ function switchZone(zoneId) {
   showToast("Moved to " + cfg.name + "!");
 }
 
-// ----- Evolution purchase (unchanged) -----
+// ----- Evolution purchase -----
 function buyEvolution(type) {
   var evo = EVOLUTION_TREE[type];
   var ct = state.evolution[type] || 0;
@@ -242,7 +247,7 @@ function buyEvolution(type) {
   refreshHUD();
 }
 
-// ----- Ascension upgrade (unchanged) -----
+// ----- Ascension upgrade -----
 function buyAscensionUpgrade(id) {
   var item = null;
   for (var i = 0; i < ASCENSION_SHOP.length; i++) { if (ASCENSION_SHOP[i].id === id) { item = ASCENSION_SHOP[i]; break; } }
@@ -261,12 +266,13 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop (unchanged except rain throttle already fixed) -----
+// ----- Main loop -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 
 function startGameLoop() {
   gameLoopActive = true;
   state.lastTime = performance.now();
+  state.lastSaveTime = Date.now();   // prevent stale offline time
   function animate() {
     if (!gameLoopActive) {
       animFrameId = null;
@@ -362,7 +368,6 @@ function startGameLoop() {
 
       if (state.deadSoldiers > 0) { state.soldierRespawnTimer -= dt; if (state.soldierRespawnTimer <= 0) respawnSoldier(); }
 
-      // ... (rest of the loop unchanged) ...
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
         if (sp.stealing && sp.fleeTarget) {
