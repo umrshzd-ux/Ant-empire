@@ -178,7 +178,7 @@ html, body {
 canvas { display: block; }
 
 /* ============================================================
-   HUD PILLS (unchanged styling but fewer elements)
+   HUD PILLS
    ============================================================ */
 #hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex;
@@ -202,10 +202,10 @@ canvas { display: block; }
 #top-left, #top-right { display: flex; flex-direction: column; gap: 4px; }
 
 /* ============================================================
-   ALERTS DROPDOWN
+   ALERTS & RESOURCES DROPDOWNS – with close button
    ============================================================ */
-#alerts-panel {
-  position: absolute; top: 50px; left: 8px; z-index: 40;
+#alerts-panel, #resources-panel {
+  position: absolute; z-index: 40;
   background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
   border: 2px solid rgba(200,150,80,0.6);
   border-radius: 16px; padding: 12px; display: none; flex-direction: column; gap: 6px;
@@ -213,29 +213,22 @@ canvas { display: block; }
   box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
   backdrop-filter: blur(8px);
 }
-#alerts-panel .alert-item {
+#alerts-panel { top: 120px; left: 8px; }
+#resources-panel { top: 120px; right: 8px; }
+#alerts-panel .alert-item, #resources-panel .resource-row {
   font-size: 13px; color: #f3e3c4; padding: 4px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-
-/* ============================================================
-   RESOURCES POPUP
-   ============================================================ */
-#resources-panel {
-  position: absolute; top: 50px; right: 8px; z-index: 40;
-  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
-  border: 2px solid rgba(200,150,80,0.6);
-  border-radius: 16px; padding: 12px; display: none; flex-direction: column; gap: 6px;
-  min-width: 180px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
-  backdrop-filter: blur(8px);
-}
-#resources-panel .resource-row {
-  display: flex; justify-content: space-between; font-size: 13px; color: #f3e3c4;
+#resources-panel .resource-row { display: flex; justify-content: space-between; }
+.panel-close-btn {
+  align-self: flex-end;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color:#fff;
+  border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; line-height: 1;
 }
 
 /* ============================================================
-   BOTTOM BAR (decluttered)
+   BOTTOM BAR
    ============================================================ */
 #bottom-bar {
   position: absolute; bottom: 0; left: 0; right: 0; display: flex;
@@ -441,7 +434,7 @@ canvas { display: block; }
 }
 
 /* ============================================================
-   FLOATING PANELS – 3D GLASS CARDS (unchanged)
+   FLOATING PANELS – 3D GLASS CARDS
    ============================================================ */
 .overlay-panel {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -660,6 +653,7 @@ canvas { display: block; }
   <div class="panel-title">⚙️ Settings</div>
   <div class="setting-row"><span>🔊 Sound Effects</span><div class="toggle-switch on" id="toggle-sfx"></div></div>
   <div class="setting-row"><span>🎵 Ambient Music</span><div class="toggle-switch on" id="toggle-ambient"></div></div>
+  <div class="setting-row"><span>🎶 Background Music</span><div class="toggle-switch on" id="toggle-music"></div></div>
   <div class="setting-row"><span>📳 Screen Shake</span><div class="toggle-switch on" id="toggle-shake"></div></div>
   <button class="menu-btn" id="btn-close-settings">Close</button>
 </div>
@@ -695,9 +689,7 @@ canvas { display: block; }
   <div id="top-left">
     <div class="resource-pill"><div class="resource-icon icon-food">🌾</div><span id="food-count">0</span>/<span id="food-cap">30</span></div>
     <div class="resource-pill"><div class="resource-icon icon-gem">💎</div><span id="gem-count">0</span></div>
-    <div class="resource-pill clickable" id="alerts-pill" style="position:relative;">
-      🔔 <span id="alert-count">0</span>
-    </div>
+    <div class="resource-pill clickable" id="alerts-pill" style="position:relative;">🔔 <span id="alert-count">0</span></div>
   </div>
   <div id="top-right">
     <div class="resource-pill"><span id="ant-count">3</span>🐜</div>
@@ -707,11 +699,15 @@ canvas { display: block; }
   </div>
 </div>
 
-<!-- Alerts dropdown -->
-<div id="alerts-panel"></div>
+<!-- Alerts dropdown (with close button) -->
+<div id="alerts-panel">
+  <button class="panel-close-btn" id="alerts-close-btn">✖</button>
+  <div id="alerts-content"></div>
+</div>
 
-<!-- Resources popup -->
+<!-- Resources popup (with close button) -->
 <div id="resources-panel">
+  <button class="panel-close-btn" id="resources-close-btn">✖</button>
   <div class="resource-row"><span>🥚 Eggs</span><span id="res-eggs">0</span></div>
   <div class="resource-row"><span>⚡ Virtual Workers</span><span id="res-vw">0</span></div>
   <div class="resource-row"><span>🔥 Streak</span><span id="res-streak">🔥1</span></div>
@@ -742,6 +738,7 @@ canvas { display: block; }
   <button class="cam-btn" id="btn-orbit" style="display:none">Orbit</button>
 </div>
 
+<!-- Toast, floaters, etc. -->
 <div id="toast"></div><div id="floaters"></div><div id="tutorial-toast"></div>
 <div id="boss-name">👑 Queen Spider</div><div id="boss-health-bar"><div id="boss-health-fill"></div></div>
 <div id="achievement-toast"><div class="ach-icon" id="ach-toast-icon"></div><div class="ach-title" id="ach-toast-title"></div><div class="ach-desc" id="ach-toast-desc"></div></div>
@@ -791,6 +788,7 @@ canvas { display: block; }
   </div>
 </div>
 
+<!-- Surge, event, summon buttons -->
 <div id="surge-btn">👑 Fertile Surge!</div>
 <div id="event-btn">🎲 Random Event!</div>
 <div id="summon-btn">💀 Summon Boss (5💎)</div>
@@ -823,7 +821,26 @@ canvas { display: block; }
 <div id="ascension-shop-panel" class="game-panel"><div style="color:#ffaa00;font-weight:700;text-align:center">⬆️ Ascension Shop</div><div id="ascension-shop-list"></div></div>
 <div id="achievements-panel" class="game-panel"><div style="color:#ffd27a;font-weight:700;text-align:center">🏆 Achievements</div><div id="ach-list"></div></div>
 
+<!-- Background music (generated by audio.js) -->
+<audio id="bg-music" loop style="display:none"></audio>
+
 <!-- SCRIPTS -->
+<script src="js/three.min.js?v=final-music"></script>
+<script src="js/audio.js?v=final-music"></script>
+<script src="js/config.js?v=final-music"></script>
+<script src="js/state.js?v=final-music"></script>
+<script src="js/terrain.js?v=final-music"></script>
+<script src="js/main.js?v=final-music"></script>
+<script src="js/camera.js?v=final-music"></script>
+<script src="js/chambers.js?v=final-music"></script>
+<script src="js/ants.js?v=final-music"></script>
+<script src="js/enemies.js?v=final-music"></script>
+<script src="js/combat.js?v=final-music"></script>
+<script src="js/abilities.js?v=final-music"></script>
+<script src="js/ui.js?v=final-music"></script>
+<script src="js/shop.js?v=final-music"></script>
+<script src="js/upgrades.js?v=final-music"></script>
+
 <script>
 // ===== DUST PARTICLES (reduced count for performance) =====
 (function(){
@@ -857,22 +874,6 @@ canvas { display: block; }
   anim();
 })();
 </script>
-
-<script src="js/three.min.js?v=final1"></script>
-<script src="js/audio.js?v=final1"></script>
-<script src="js/config.js?v=final1"></script>
-<script src="js/state.js?v=final1"></script>
-<script src="js/terrain.js?v=final1"></script>
-<script src="js/main.js?v=final1"></script>
-<script src="js/camera.js?v=final1"></script>
-<script src="js/chambers.js?v=final1"></script>
-<script src="js/ants.js?v=final1"></script>
-<script src="js/enemies.js?v=final1"></script>
-<script src="js/combat.js?v=final1"></script>
-<script src="js/abilities.js?v=final1"></script>
-<script src="js/ui.js?v=final1"></script>
-<script src="js/shop.js?v=final1"></script>
-<script src="js/upgrades.js?v=final1"></script>
 
 <script>
   window.onerror = function(msg, url, line) {
@@ -949,4 +950,4 @@ canvas { display: block; }
   })();
 </script>
 </body>
-                    </html>
+   </html>
