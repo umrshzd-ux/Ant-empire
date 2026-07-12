@@ -19,7 +19,7 @@ html, body {
 }
 
 /* ============================================================
-   PARALLAX BACKGROUND LAYERS – REALISTIC CAVE
+   PARALLAX BACKGROUND LAYERS – REALISTIC CAVE (ENHANCED)
    ============================================================ */
 #bg-container {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
@@ -29,79 +29,94 @@ html, body {
 /* Far depth – deep cave walls */
 #bg-far {
   background:
-    radial-gradient(ellipse at 20% 30%, #1f140b 0%, transparent 40%),
-    radial-gradient(ellipse at 70% 25%, #180d06 0%, transparent 35%),
-    radial-gradient(ellipse at 50% 80%, #0a0402 0%, transparent 55%),
-    linear-gradient(180deg, #1a0f07 0%, #0f0804 30%, #070302 60%, #040201 100%);
+    radial-gradient(ellipse at 20% 25%, #1e1209 0%, transparent 40%),
+    radial-gradient(ellipse at 75% 30%, #160c05 0%, transparent 38%),
+    radial-gradient(ellipse at 50% 80%, #080301 0%, transparent 55%),
+    linear-gradient(180deg, #1a0f07 0%, #0e0703 30%, #060302 60%, #030201 100%);
   z-index: 1;
 }
 /* Mid depth – soft rock formations, distant chambers */
 #bg-mid {
   background:
-    radial-gradient(ellipse at 30% 45%, rgba(90,50,25,0.25) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 55%, rgba(70,40,20,0.2) 0%, transparent 45%),
-    radial-gradient(circle at 40% 70%, rgba(50,30,15,0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at 30% 45%, rgba(90,50,25,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 55%, rgba(70,40,20,0.22) 0%, transparent 45%),
+    radial-gradient(circle at 40% 70%, rgba(50,30,15,0.18) 0%, transparent 40%),
     /* Distant glowing chambers */
-    radial-gradient(ellipse at 80% 30%, rgba(255,160,40,0.12) 0%, transparent 20%),
-    radial-gradient(ellipse at 20% 60%, rgba(255,140,30,0.08) 0%, transparent 15%);
+    radial-gradient(ellipse at 80% 30%, rgba(255,160,40,0.14) 0%, transparent 20%),
+    radial-gradient(ellipse at 20% 60%, rgba(255,140,30,0.1) 0%, transparent 15%);
   z-index: 2;
 }
 /* Near depth – pebbles, roots, ground details */
 #bg-near {
   background:
-    radial-gradient(ellipse at 25% 80%, rgba(100,55,30,0.2) 0%, transparent 35%),
-    radial-gradient(ellipse at 75% 20%, rgba(80,45,22,0.18) 0%, transparent 30%),
-    radial-gradient(circle at 50% 90%, rgba(40,20,10,0.4) 0%, transparent 50%),
-    /* Small rocks */
-    radial-gradient(4px 4px at 15% 85%, rgba(110,65,30,0.5), transparent),
-    radial-gradient(3px 3px at 82% 18%, rgba(120,70,35,0.4), transparent),
-    radial-gradient(5px 5px at 45% 22%, rgba(90,50,25,0.5), transparent),
-    radial-gradient(3px 3px at 68% 75%, rgba(105,60,30,0.4), transparent);
+    radial-gradient(ellipse at 25% 80%, rgba(100,55,30,0.22) 0%, transparent 35%),
+    radial-gradient(ellipse at 75% 20%, rgba(80,45,22,0.2) 0%, transparent 30%),
+    radial-gradient(circle at 50% 90%, rgba(40,20,10,0.45) 0%, transparent 50%),
+    /* Small rocks & pebbles */
+    radial-gradient(3px 3px at 12% 88%, rgba(110,65,30,0.6), transparent),
+    radial-gradient(4px 4px at 85% 15%, rgba(120,70,35,0.5), transparent),
+    radial-gradient(2px 2px at 48% 24%, rgba(95,55,28,0.55), transparent),
+    radial-gradient(5px 5px at 65% 78%, rgba(105,60,30,0.5), transparent),
+    radial-gradient(3px 3px at 35% 65%, rgba(110,62,32,0.45), transparent),
+    radial-gradient(4px 4px at 78% 55%, rgba(100,58,28,0.5), transparent),
+    /* Moss patches */
+    radial-gradient(ellipse at 20% 75%, rgba(60,100,40,0.15) 0%, transparent 25%),
+    radial-gradient(ellipse at 80% 85%, rgba(50,90,35,0.12) 0%, transparent 20%),
+    radial-gradient(ellipse at 45% 18%, rgba(55,95,38,0.1) 0%, transparent 18%);
   z-index: 3;
 }
 
-/* Detailed soil texture – tiny particles */
+/* Detailed soil texture – many tiny specs for realism */
 #soil-texture {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4;
   background-image:
-    /* Small dirt specs */
-    radial-gradient(1px 1px at 10% 15%, rgba(80,40,20,0.6), transparent),
-    radial-gradient(1px 1px at 85% 25%, rgba(60,30,15,0.5), transparent),
-    radial-gradient(1px 1px at 40% 55%, rgba(70,35,18,0.55), transparent),
-    radial-gradient(1px 1px at 65% 70%, rgba(65,30,15,0.5), transparent),
-    radial-gradient(1px 1px at 20% 78%, rgba(75,38,19,0.45), transparent),
-    radial-gradient(1px 1px at 78% 12%, rgba(55,28,14,0.5), transparent),
-    radial-gradient(1px 1px at 8% 48%, rgba(68,34,17,0.4), transparent),
-    radial-gradient(1px 1px at 92% 58%, rgba(72,36,18,0.5), transparent),
-    radial-gradient(1px 1px at 48% 38%, rgba(62,31,15,0.55), transparent),
-    radial-gradient(1px 1px at 30% 10%, rgba(58,29,14,0.4), transparent);
-  background-size: 200px 200px, 180px 180px, 220px 220px, 190px 190px, 210px 210px, 200px 200px, 180px 180px, 220px 220px, 190px 190px, 200px 200px;
-  background-position: 0 0, 40px 20px, 80px 60px, 120px 30px, 160px 70px, 20px 80px, 100px 40px, 140px 10px, 60px 50px, 180px 90px;
-  opacity: 0.7;
+    radial-gradient(1px 1px at 10% 15%, rgba(80,40,20,0.7), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(60,30,15,0.6), transparent),
+    radial-gradient(1px 1px at 40% 55%, rgba(70,35,18,0.65), transparent),
+    radial-gradient(1px 1px at 65% 70%, rgba(65,30,15,0.6), transparent),
+    radial-gradient(1px 1px at 20% 78%, rgba(75,38,19,0.55), transparent),
+    radial-gradient(1px 1px at 78% 12%, rgba(55,28,14,0.6), transparent),
+    radial-gradient(1px 1px at 8% 48%, rgba(68,34,17,0.5), transparent),
+    radial-gradient(1px 1px at 92% 58%, rgba(72,36,18,0.6), transparent),
+    radial-gradient(1px 1px at 48% 38%, rgba(62,31,15,0.65), transparent),
+    radial-gradient(1px 1px at 30% 10%, rgba(58,29,14,0.5), transparent),
+    radial-gradient(1px 1px at 60% 90%, rgba(78,40,20,0.55), transparent),
+    radial-gradient(1px 1px at 15% 62%, rgba(82,42,21,0.5), transparent),
+    radial-gradient(1px 1px at 88% 44%, rgba(74,37,18,0.55), transparent),
+    radial-gradient(1px 1px at 55% 28%, rgba(66,33,16,0.5), transparent),
+    radial-gradient(1px 1px at 22% 35%, rgba(70,35,18,0.6), transparent);
+  background-size: 200px 200px, 180px 180px, 220px 220px, 190px 190px, 210px 210px,
+                   200px 200px, 180px 180px, 220px 220px, 190px 190px, 200px 200px,
+                   210px 210px, 190px 190px, 200px 200px, 180px 180px, 220px 220px;
+  background-position: 0 0, 40px 20px, 80px 60px, 120px 30px, 160px 70px, 20px 80px,
+                       100px 40px, 140px 10px, 60px 50px, 180px 90px, 30px 110px,
+                       110px 130px, 150px 15px, 70px 95px, 130px 75px;
+  opacity: 0.75;
 }
 
-/* Tunnels – deeper entrances */
+/* Tunnels – deeper entrances with faint glow */
 #tunnels {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;
   background:
     /* Main tunnel opening */
-    radial-gradient(ellipse at 50% 85%, rgba(5,2,1,0.95) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 85%, rgba(5,2,1,0.98) 0%, transparent 45%),
     /* Side tunnels */
-    radial-gradient(ellipse at 25% 70%, rgba(8,3,1,0.9) 0%, transparent 35%),
-    radial-gradient(ellipse at 75% 65%, rgba(6,2,1,0.9) 0%, transparent 30%),
-    /* Small light at end of tunnels */
-    radial-gradient(ellipse at 50% 82%, rgba(255,180,60,0.15) 0%, transparent 25%),
-    radial-gradient(ellipse at 25% 67%, rgba(255,160,40,0.1) 0%, transparent 20%),
-    radial-gradient(ellipse at 75% 62%, rgba(255,170,45,0.1) 0%, transparent 18%);
+    radial-gradient(ellipse at 25% 70%, rgba(8,3,1,0.95) 0%, transparent 35%),
+    radial-gradient(ellipse at 75% 65%, rgba(6,2,1,0.95) 0%, transparent 30%),
+    /* Small warm light at end of tunnels */
+    radial-gradient(ellipse at 50% 82%, rgba(255,180,60,0.18) 0%, transparent 25%),
+    radial-gradient(ellipse at 25% 67%, rgba(255,160,40,0.12) 0%, transparent 20%),
+    radial-gradient(ellipse at 75% 62%, rgba(255,170,45,0.12) 0%, transparent 18%);
 }
 
-/* Tree roots – thick winding lines */
+/* Tree roots – thicker, more pronounced */
 #roots {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 6;
   background:
-    linear-gradient(150deg, transparent 40%, rgba(60,30,15,0.5) 41%, rgba(80,40,20,0.6) 43%, transparent 44%),
-    linear-gradient(30deg, transparent 55%, rgba(50,25,12,0.45) 56%, rgba(70,35,18,0.55) 58%, transparent 59%),
-    linear-gradient(110deg, transparent 65%, rgba(55,28,14,0.4) 66%, rgba(65,32,16,0.5) 68%, transparent 69%);
+    linear-gradient(150deg, transparent 38%, rgba(70,35,18,0.6) 39%, rgba(90,45,22,0.7) 41%, transparent 42%),
+    linear-gradient(30deg, transparent 53%, rgba(55,28,14,0.55) 54%, rgba(80,40,20,0.65) 56%, transparent 57%),
+    linear-gradient(110deg, transparent 63%, rgba(60,30,15,0.5) 64%, rgba(75,38,19,0.6) 66%, transparent 67%),
+    linear-gradient(80deg, transparent 72%, rgba(50,25,12,0.4) 73%, rgba(65,32,16,0.5) 75%, transparent 76%);
 }
 
 /* God rays – warm light shafts */
@@ -119,7 +134,7 @@ html, body {
   100% { opacity: 0.7; transform: scale(1); }
 }
 
-/* Dust particles – floating motes */
+/* Dust particles – fewer for performance, still atmospheric */
 #dust-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8; }
 .dust {
   position: absolute; background: radial-gradient(circle, rgba(255,200,140,0.3) 0%, transparent 70%);
@@ -136,7 +151,7 @@ html, body {
 /* Vignette – dark edges */
 #vignette {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.75) 100%);
 }
 
 /* Cave glow – breathing warm light from below */
@@ -163,7 +178,7 @@ html, body {
 canvas { display: block; }
 
 /* ============================================================
-   HUD PILLS – game UI (unchanged structure)
+   HUD PILLS (unchanged)
    ============================================================ */
 #hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex;
@@ -366,7 +381,7 @@ canvas { display: block; }
 }
 
 /* ============================================================
-   FLOATING PANELS – 3D GLASS CARDS (redesigned)
+   FLOATING PANELS – 3D GLASS CARDS (unchanged)
    ============================================================ */
 .overlay-panel {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -730,17 +745,17 @@ canvas { display: block; }
 
 <!-- SCRIPTS -->
 <script>
-// ===== DUST PARTICLES =====
+// ===== DUST PARTICLES (reduced count for performance) =====
 (function(){
   var dust=document.getElementById('dust-layer');
-  for(var i=0;i<30;i++){
+  for(var i=0;i<20;i++){
     var p=document.createElement('div');
     p.className='dust';
-    var s=2+Math.random()*6;
+    var s=2+Math.random()*5;
     p.style.width=s+'px';p.style.height=s+'px';
     p.style.left=Math.random()*100+'%';
     p.style.top=Math.random()*100+'%';
-    p.style.animationDuration=9+Math.random()*15+'s';
+    p.style.animationDuration=10+Math.random()*14+'s';
     p.style.animationDelay=Math.random()*10+'s';
     dust.appendChild(p);
   }
@@ -763,21 +778,21 @@ canvas { display: block; }
 })();
 </script>
 
-<script src="js/three.min.js?v=premium3"></script>
-<script src="js/audio.js?v=premium3"></script>
-<script src="js/config.js?v=premium3"></script>
-<script src="js/state.js?v=premium3"></script>
-<script src="js/terrain.js?v=premium3"></script>
-<script src="js/main.js?v=premium3"></script>
-<script src="js/camera.js?v=premium3"></script>
-<script src="js/chambers.js?v=premium3"></script>
-<script src="js/ants.js?v=premium3"></script>
-<script src="js/enemies.js?v=premium3"></script>
-<script src="js/combat.js?v=premium3"></script>
-<script src="js/abilities.js?v=premium3"></script>
-<script src="js/ui.js?v=premium3"></script>
-<script src="js/shop.js?v=premium3"></script>
-<script src="js/upgrades.js?v=premium3"></script>
+<script src="js/three.min.js?v=premium4"></script>
+<script src="js/audio.js?v=premium4"></script>
+<script src="js/config.js?v=premium4"></script>
+<script src="js/state.js?v=premium4"></script>
+<script src="js/terrain.js?v=premium4"></script>
+<script src="js/main.js?v=premium4"></script>
+<script src="js/camera.js?v=premium4"></script>
+<script src="js/chambers.js?v=premium4"></script>
+<script src="js/ants.js?v=premium4"></script>
+<script src="js/enemies.js?v=premium4"></script>
+<script src="js/combat.js?v=premium4"></script>
+<script src="js/abilities.js?v=premium4"></script>
+<script src="js/ui.js?v=premium4"></script>
+<script src="js/shop.js?v=premium4"></script>
+<script src="js/upgrades.js?v=premium4"></script>
 
 <script>
   window.onerror = function(msg, url, line) {
@@ -854,4 +869,4 @@ canvas { display: block; }
   })();
 </script>
 </body>
-                                                                                                                            </html>
+       </html>
