@@ -36,6 +36,7 @@ function initDOMRefs() {
   rallyOverlay = rallyBtn ? rallyBtn.querySelector(".cooldown-overlay") : null;
 }
 initDOMRefs();
+if (rallyBtn) rallyBtn.addEventListener("click", activateRally);
 
 // ---- Attach summon, surge, event listeners (moved from abilities.js) ----
 if (surgeBtn) {
