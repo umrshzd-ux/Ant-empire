@@ -54,8 +54,8 @@ function combatUpdate(dt) {
     }
     if (ts) {
       var dmg = BAL.spiderDamage;
-      // Defense banner halves damage to soldiers
-      if (state.defenseBannerTimer > 0) dmg = Math.floor(dmg / 2);
+      // Defense banner halves damage to soldiers (safe check)
+      if (state.defenseBannerTimer && state.defenseBannerTimer > 0) dmg = Math.floor(dmg / 2);
       ts.health -= dmg;
       spawnDamageNumber(dmg, ts.mesh.position, "#ffaa00");
       sp.attackCooldown = BAL.spiderAttackCD;
@@ -169,8 +169,8 @@ function updateBoss(dt) {
     for (var i = 0; i < soldiers.length; i++) {
       if (soldiers[i].mesh.position.distanceTo(p) < 2.5) {
         var dmg = BAL[bt.dmgKey];
-        // Defense banner halves boss damage
-        if (state.defenseBannerTimer > 0) dmg = Math.floor(dmg / 2);
+        // Defense banner halves boss damage (safe check)
+        if (state.defenseBannerTimer && state.defenseBannerTimer > 0) dmg = Math.floor(dmg / 2);
         soldiers[i].health -= dmg;
         spawnDamageNumber(dmg, soldiers[i].mesh.position, "#ff0000");
         boss.attackCooldown = 2.0;
