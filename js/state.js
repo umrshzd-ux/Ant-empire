@@ -265,6 +265,8 @@ function getCurrentZoneConfig() {
 // Temporary state cleanup (prestige/ascension)
 function resetWeatherAndBoosts() {
   state.speedBoostTimer = 0;
+  state.luckyHourTimer = 0;
+  state.defenseBannerTimer = 0;
   state.weatherActive = false; state.weatherTimeLeft = 0; state.weatherType = null; state.isNight = false;
   for (var ri = 0; ri < rainDrops.length; ri++) rainDrops[ri].visible = false;
   for (var mi = 0; mi < mushroomMeshes.length; mi++) mushroomMeshes[mi].visible = false;
@@ -352,4 +354,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-             }
+  }
