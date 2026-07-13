@@ -300,7 +300,11 @@ function startGameLoop() {
       updateTutorial(dt);
       updateQueenIdle(dt);
 
+      // Update boost timers
       if (state.speedBoostTimer > 0) { state.speedBoostTimer -= dt; if (state.speedBoostTimer <= 0) applyAllWorkerSpeeds(); }
+      if (state.luckyHourTimer > 0) { state.luckyHourTimer -= dt; }
+      if (state.defenseBannerTimer > 0) { state.defenseBannerTimer -= dt; }
+
       if (state.virtualWorkers > 0) addFood(state.virtualWorkers * BAL.virtualFoodPerSecond * dt);
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
@@ -440,7 +444,7 @@ function startGameLoop() {
           }
         }
       }
-      combatUpdate(dt);
+      combatUpdate(dt);  // Note: defense banner effect applied inside combatUpdate
 
       for (var si = 0; si < soldiers.length; si++) updateHealthBar(soldiers[si].healthBar, soldiers[si].health / soldiers[si].maxHealth);
       for (var ei = 0; ei < enemies.length; ei++) updateHealthBar(enemies[ei].healthBar, enemies[ei].health / enemies[ei].maxHealth);
@@ -523,3 +527,6 @@ function initGameSystems() {
 }
 
 initThreeJS();
+
+// The following functions are defined in other files but called here; they are already included.
+// performPrestige is defined in ui.js, not here. The change in ui.js ensures gemUpgrades are kept.
