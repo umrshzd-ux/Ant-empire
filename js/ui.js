@@ -40,7 +40,7 @@ initDOMRefs();
 // Rally button listener (safe)
 if (rallyBtn) rallyBtn.addEventListener("click", activateRally);
 
-// ---- Attach summon, surge, event listeners (moved from abilities.js) ----
+// ---- Attach summon, surge, event listeners ----
 if (surgeBtn) {
   surgeBtn.addEventListener("click", function() {
     if (!state.surgeActive) return;
@@ -76,6 +76,10 @@ if (eventBtn) {
 }
 if (summonBtn) {
   summonBtn.addEventListener("click", function() {
+    if (typeof spawnBoss !== 'function') {
+      showToast("❌ Boss system not ready. Please wait or reload.");
+      return;
+    }
     if (state.bossActive) { showToast("Boss already active!"); return; }
     if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
     state.gems -= BAL.summonCost;
@@ -1095,4 +1099,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-}
+                  }
