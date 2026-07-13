@@ -97,9 +97,9 @@ document.addEventListener('click', function(e) {
 
 // ---- Close buttons inside panels (safe) ----
 var alertsCloseBtn = document.getElementById('alerts-close-btn');
-if (alertsCloseBtn) alertsCloseBtn.onclick = function() { elAlertsPanel.style.display = 'none'; };
+if (alertsCloseBtn) alertsCloseBtn.onclick = function() { if (elAlertsPanel) elAlertsPanel.style.display = 'none'; };
 var resourcesCloseBtn = document.getElementById('resources-close-btn');
-if (resourcesCloseBtn) resourcesCloseBtn.onclick = function() { elResourcesPanel.style.display = 'none'; };
+if (resourcesCloseBtn) resourcesCloseBtn.onclick = function() { if (elResourcesPanel) elResourcesPanel.style.display = 'none'; };
 
 function closeAllModals() {
   ['offline-modal', 'daily-modal', 'prestige-modal', 'ascend-modal', 'about-modal'].forEach(function(id) {
@@ -110,6 +110,7 @@ function closeAllModals() {
 // Toasts
 var toastQueue = [], toastActive = false;
 function processToastQueue() {
+  if (!toastEl) return;
   if (toastActive || toastQueue.length === 0) return;
   toastActive = true;
   var msg = toastQueue.shift();
@@ -125,15 +126,20 @@ function showToast(msg) { toastQueue.push(msg); processToastQueue(); }
 var achToastTimeout = null;
 function showAchievementToast(achName, achIcon, tierDesc, reward) {
   var at = document.getElementById('achievement-toast');
-  document.getElementById('ach-toast-icon').textContent = achIcon;
-  document.getElementById('ach-toast-title').textContent = achName;
-  document.getElementById('ach-toast-desc').textContent = tierDesc + " — 💎 +" + reward;
+  if (!at) return;
+  var iconEl = document.getElementById('ach-toast-icon');
+  var titleEl = document.getElementById('ach-toast-title');
+  var descEl = document.getElementById('ach-toast-desc');
+  if (iconEl) iconEl.textContent = achIcon;
+  if (titleEl) titleEl.textContent = achName;
+  if (descEl) descEl.textContent = tierDesc + " — 💎 +" + reward;
   at.style.opacity = "1";
   if (achToastTimeout) clearTimeout(achToastTimeout);
   achToastTimeout = setTimeout(function() { at.style.opacity = "0"; achToastTimeout = null; }, 3500);
 }
 
 function spawnFloater(text, sx, sy, color) {
+  if (!floatersEl) return;
   var f = document.createElement("div");
   f.className = "floater";
   f.textContent = text;
@@ -148,6 +154,7 @@ function spawnFloater(text, sx, sy, color) {
 //  ALERTS (wave, event, boss) – unified panel
 // =============================================
 function updateAlertsPanel() {
+  if (!elAlertCount) return;
   var alerts = [];
   if (state.waveActive) alerts.push({ text: "⚠️ Wave in progress", color: "#ffaa00" });
   else alerts.push({ text: "Wave in " + Math.ceil(state.waveTimer) + "s", color: "#ffaa00" });
@@ -161,7 +168,7 @@ function updateAlertsPanel() {
     alerts.push({ text: "Boss in " + display, color: "#cc0000" });
   }
   elAlertCount.textContent = alerts.length;
-  if (elAlertsPanel.style.display === 'flex') {
+  if (elAlertsPanel && elAlertsContent && elAlertsPanel.style.display === 'flex') {
     var html = '';
     alerts.forEach(function(a) { html += '<div class="alert-item" style="color:' + a.color + ';">' + a.text + '</div>'; });
     if (alerts.length === 0) html = '<div class="alert-item" style="color:#aaa;">No alerts</div>';
@@ -177,38 +184,49 @@ function updateBossTimer() { updateAlertsPanel(); }
 var alertsPill = document.getElementById("alerts-pill");
 if (alertsPill) alertsPill.onclick = function() {
   AudioManager.sfx.buttonClick();
-  if (elAlertsPanel.style.display === 'flex') { elAlertsPanel.style.display = 'none'; }
-  else { elResourcesPanel.style.display = 'none'; elAlertsPanel.style.display = 'flex'; updateAlertsPanel(); }
+  if (elAlertsPanel && elResourcesPanel) {
+    if (elAlertsPanel.style.display === 'flex') { elAlertsPanel.style.display = 'none'; }
+    else { elResourcesPanel.style.display = 'none'; elAlertsPanel.style.display = 'flex'; updateAlertsPanel(); }
+  }
 };
 
 // =============================================
 //  RESOURCES POPUP (eggs, VW, fire, PP, AP, level)
 // =============================================
 function updateResourcesPopup() {
-  document.getElementById("res-eggs").textContent = state.eggs;
-  document.getElementById("res-vw").textContent = state.virtualWorkers;
-  document.getElementById("res-streak").textContent = "🔥" + state.dailyStreak;
-  document.getElementById("res-pp").textContent = state.prestigePoints + " PP";
-  document.getElementById("res-ap").textContent = state.ascensionPoints + " AP";
-  document.getElementById("res-level").textContent = state.level;
+  var resEggs = document.getElementById("res-eggs");
+  var resVW = document.getElementById("res-vw");
+  var resStreak = document.getElementById("res-streak");
+  var resPP = document.getElementById("res-pp");
+  var resAP = document.getElementById("res-ap");
+  var resLevel = document.getElementById("res-level");
+  if (resEggs) resEggs.textContent = state.eggs;
+  if (resVW) resVW.textContent = state.virtualWorkers;
+  if (resStreak) resStreak.textContent = "🔥" + state.dailyStreak;
+  if (resPP) resPP.textContent = state.prestigePoints + " PP";
+  if (resAP) resAP.textContent = state.ascensionPoints + " AP";
+  if (resLevel) resLevel.textContent = state.level;
 }
 
 var resourcesPill = document.getElementById("resources-pill");
 if (resourcesPill) resourcesPill.onclick = function() {
   AudioManager.sfx.buttonClick();
-  if (elResourcesPanel.style.display === 'flex') { elResourcesPanel.style.display = 'none'; }
-  else { elAlertsPanel.style.display = 'none'; elResourcesPanel.style.display = 'flex'; updateResourcesPopup(); }
+  if (elResourcesPanel && elAlertsPanel) {
+    if (elResourcesPanel.style.display === 'flex') { elResourcesPanel.style.display = 'none'; }
+    else { elAlertsPanel.style.display = 'none'; elResourcesPanel.style.display = 'flex'; updateResourcesPopup(); }
+  }
 };
 
 // =============================================
-//  HUD UPDATE – simplified
+//  HUD UPDATE – simplified, with null checks
 // =============================================
 function refreshHUD() {
-  elFood.textContent = Math.floor(state.food);
-  elFoodCap.textContent = state.foodCap;
-  elGems.textContent = Math.floor(state.gems);
-  elAnts.textContent = state.workerCount + state.soldierCount + state.scoutCount;
-  document.getElementById('zone-display').textContent = ZONE_CONFIG[state.currentZone] ? ZONE_CONFIG[state.currentZone].label : '🌳Forest';
+  if (elFood) elFood.textContent = Math.floor(state.food);
+  if (elFoodCap) elFoodCap.textContent = state.foodCap;
+  if (elGems) elGems.textContent = Math.floor(state.gems);
+  if (elAnts) elAnts.textContent = state.workerCount + state.soldierCount + state.scoutCount;
+  var zoneDisp = document.getElementById('zone-display');
+  if (zoneDisp) zoneDisp.textContent = ZONE_CONFIG[state.currentZone] ? ZONE_CONFIG[state.currentZone].label : '🌳Forest';
   if (typeof updateSummonButton === 'function') updateSummonButton();
 }
 
@@ -216,6 +234,7 @@ function refreshHUD() {
 //  "MORE" PANEL
 // =============================================
 function toggleMorePanel() {
+  if (!elMorePanel) return;
   if (elMorePanel.style.display === 'flex') {
     elMorePanel.style.display = 'none';
   } else {
@@ -230,7 +249,7 @@ if (btnMore) btnMore.onclick = function() {
 };
 
 // =============================================
-//  ACHIEVEMENTS (unchanged)
+//  ACHIEVEMENTS (unchanged, but safe)
 // =============================================
 function checkAchievements() {
   for (var i = 0; i < ACHIEVEMENTS.length; i++) {
@@ -462,13 +481,15 @@ function showOfflineModal(data) {
   closeAllModals();
   if (!data || data.time < 30) { checkDailyLogin(); return; }
   var modal = document.getElementById('offline-modal');
+  if (!modal) return;
   var mins = Math.floor(data.time / 60), hrs = Math.floor(mins / 60), timeStr = hrs > 0 ? hrs + "h " + (mins % 60) + "m" : mins + "m";
-  document.getElementById('offline-time').textContent = "⏰ You were away for " + timeStr;
-  document.getElementById('offline-food').textContent = "🌾 +" + data.food + " food";
-  document.getElementById('offline-eggs').textContent = "🥚 +" + data.eggs + " eggs";
-  document.getElementById('offline-gems').textContent = "💎 +" + data.gems + " gems";
+  var elTime = document.getElementById('offline-time'); if (elTime) elTime.textContent = "⏰ You were away for " + timeStr;
+  var elFood = document.getElementById('offline-food'); if (elFood) elFood.textContent = "🌾 +" + data.food + " food";
+  var elEggs = document.getElementById('offline-eggs'); if (elEggs) elEggs.textContent = "🥚 +" + data.eggs + " eggs";
+  var elGems = document.getElementById('offline-gems'); if (elGems) elGems.textContent = "💎 +" + data.gems + " gems";
   modal.style.display = "flex";
-  document.getElementById('offline-claim').onclick = function() {
+  var claimBtn = document.getElementById('offline-claim');
+  if (claimBtn) claimBtn.onclick = function() {
     for (var i = 0; i < data.eggs; i++) {
       state.eggs++;
       var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
@@ -491,7 +512,7 @@ function showOfflineModal(data) {
   };
 }
 
-// Daily login (unchanged)
+// Daily login (unchanged, with null checks)
 function getTodayString() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
 function checkDailyLogin() {
   closeAllModals();
@@ -509,16 +530,20 @@ function checkDailyLogin() {
   state.gems += gemsEarned;
   state.totalGemsEarned += gemsEarned;
   var modal = document.getElementById('daily-modal');
+  if (!modal) return;
   var streakIcons = ""; for (var i = 0; i < state.dailyStreak; i++) streakIcons += "🔥";
-  document.getElementById('daily-streak-icon').textContent = streakIcons;
-  document.getElementById('daily-reward-text').textContent = "Day " + state.dailyStreak + " — 💎 +" + gemsEarned + " gems";
+  var streakEl = document.getElementById('daily-streak-icon'); if (streakEl) streakEl.textContent = streakIcons;
+  var rewardEl = document.getElementById('daily-reward-text'); if (rewardEl) rewardEl.textContent = "Day " + state.dailyStreak + " — 💎 +" + gemsEarned + " gems";
   var specialEl = document.getElementById('daily-special-text');
-  if (hasSpecial) { specialEl.textContent = "🎁 SPECIAL: Free Golden Ant Egg!"; specialEl.style.display = "block"; }
-  else { specialEl.style.display = "none"; }
+  if (specialEl) {
+    if (hasSpecial) { specialEl.textContent = "🎁 SPECIAL: Free Golden Ant Egg!"; specialEl.style.display = "block"; }
+    else { specialEl.style.display = "none"; }
+  }
   modal.style.display = "flex";
   modal.dataset.special = hasSpecial ? "true" : "false";
   AudioManager.sfx.dailyStreak();
-  document.getElementById('daily-claim').onclick = function() {
+  var claimBtn = document.getElementById('daily-claim');
+  if (claimBtn) claimBtn.onclick = function() {
     if (modal.dataset.special === "true") {
       state.workerCount++;
       var gw = createWorker(true, null, true);
@@ -541,11 +566,12 @@ function showPrestigeModal() {
   if (state.level < BAL.prestigeLevelReq) { showToast("Reach Level " + BAL.prestigeLevelReq + " to prestige!"); return; }
   var ppGain = Math.floor((state.level - BAL.prestigeLevelReq + 1) * BAL.prestigePPPerLevel) + BAL.prestigeBasePP;
   var modal = document.getElementById('prestige-modal');
-  document.getElementById('prestige-info-text').textContent = "Reset colony to Level 1 with bonuses.";
-  document.getElementById('prestige-reward-text').textContent = "✨ You will gain " + ppGain + " Prestige Points!";
+  if (!modal) return;
+  var infoEl = document.getElementById('prestige-info-text'); if (infoEl) infoEl.textContent = "Reset colony to Level 1 with bonuses.";
+  var rewardEl = document.getElementById('prestige-reward-text'); if (rewardEl) rewardEl.textContent = "✨ You will gain " + ppGain + " Prestige Points!";
   modal.style.display = "flex";
-  document.getElementById('prestige-confirm').onclick = function() { performPrestige(ppGain); modal.style.display = "none"; };
-  document.getElementById('prestige-cancel').onclick = function() { modal.style.display = "none"; };
+  var confirmBtn = document.getElementById('prestige-confirm'); if (confirmBtn) confirmBtn.onclick = function() { performPrestige(ppGain); modal.style.display = "none"; };
+  var cancelBtn = document.getElementById('prestige-cancel'); if (cancelBtn) cancelBtn.onclick = function() { modal.style.display = "none"; };
 }
 function performPrestige(ppGain) {
   resetWeatherAndBoosts();
@@ -577,7 +603,7 @@ function performPrestige(ppGain) {
   barracksSoldiers = [];
   if (researchChamberGroup) { disposeMesh(researchChamberGroup); scene.remove(researchChamberGroup); researchChamberGroup = null; }
   if (state.currentBoss) { disposeMesh(state.currentBoss.mesh); scene.remove(state.currentBoss.mesh); state.currentBoss = null; }
-  state.bossActive = false; document.getElementById('boss-name').style.display = 'none'; document.getElementById('boss-health-bar').style.display = 'none';
+  state.bossActive = false; var bossName = document.getElementById('boss-name'); if (bossName) bossName.style.display = 'none'; var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
   for (var i = 0; i < PRESTIGE_MILESTONES.length; i++) { var m = PRESTIGE_MILESTONES[i]; if (state.prestigeCount >= m.prestige) m.effect(); }
   rebuildAllChambers();
   if (state.ascensionUpgrades.elderWisdom > 0 && state.chambers.research.count === 0) {
@@ -606,11 +632,12 @@ function showAscendModal() {
   closeAllModals();
   var apGain = 1;
   var modal = document.getElementById('ascend-modal');
-  document.getElementById('ascend-info-text').textContent = "Reset ALL progress to gain 1 Ascension Point.";
-  document.getElementById('ascend-reward-text').textContent = "⬆️ You will gain " + apGain + " AP and permanent multipliers!";
+  if (!modal) return;
+  var infoEl = document.getElementById('ascend-info-text'); if (infoEl) infoEl.textContent = "Reset ALL progress to gain 1 Ascension Point.";
+  var rewardEl = document.getElementById('ascend-reward-text'); if (rewardEl) rewardEl.textContent = "⬆️ You will gain " + apGain + " AP and permanent multipliers!";
   modal.style.display = "flex";
-  document.getElementById('ascend-confirm').onclick = function() { performAscension(apGain); modal.style.display = "none"; };
-  document.getElementById('ascend-cancel').onclick = function() { modal.style.display = "none"; };
+  var confirmBtn = document.getElementById('ascend-confirm'); if (confirmBtn) confirmBtn.onclick = function() { performAscension(apGain); modal.style.display = "none"; };
+  var cancelBtn = document.getElementById('ascend-cancel'); if (cancelBtn) cancelBtn.onclick = function() { modal.style.display = "none"; };
 }
 function performAscension(apGain) {
   resetWeatherAndBoosts();
@@ -656,7 +683,7 @@ function performAscension(apGain) {
   refreshHUD(); checkAchievements(); saveGame();
   var cfg = ZONE_CONFIG.forest;
   scene.background = new THREE.Color(cfg.bg); scene.fog = new THREE.Fog(cfg.fog, 20, 80);
-  document.getElementById('zone-display').textContent = cfg.label;
+  var zoneDisp = document.getElementById('zone-display'); if (zoneDisp) zoneDisp.textContent = cfg.label;
 }
 function clearAllMeshes() {
   while (workers.length > 0) { var w = workers.pop(); if (w && w.mesh) { disposeMesh(w.mesh); scene.remove(w.mesh); } }
@@ -673,8 +700,8 @@ function clearAllMeshes() {
   while (nurseryEggClusters.length > 0) { var nc = nurseryEggClusters.pop(); if (nc) { disposeMesh(nc); scene.remove(nc); } }
   if (researchChamberGroup) { disposeMesh(researchChamberGroup); scene.remove(researchChamberGroup); researchChamberGroup = null; }
   if (state.currentBoss) { disposeMesh(state.currentBoss.mesh); scene.remove(state.currentBoss.mesh); state.currentBoss = null; }
-  document.getElementById('boss-name').style.display = 'none';
-  document.getElementById('boss-health-bar').style.display = 'none';
+  var bossName = document.getElementById('boss-name'); if (bossName) bossName.style.display = 'none';
+  var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
 }
 
 // Ascension shop UI (unchanged)
@@ -755,14 +782,14 @@ window._buyEvo = buyEvolution;
 // Upgrade UI (unchanged)
 function refreshUpgradeUI() {
   function fmt(type) { var lv = state.upgrades[type], max = UPGRADES[type].maxLevel; var cost = lv < max ? getUpgradeCost(type) : 0; return "Lv" + lv + "/" + max + (lv < max ? " " + cost + "🌾" : " MAX"); }
-  document.getElementById("upg-damage").textContent = fmt("soldierDamage");
-  document.getElementById("upg-speed").textContent = fmt("workerSpeed");
-  document.getElementById("upg-egg").textContent = fmt("eggLayTime");
-  document.getElementById("upg-cap").textContent = fmt("foodCap");
-  document.getElementById("btn-upg-damage").disabled = state.upgrades.soldierDamage >= UPGRADES.soldierDamage.maxLevel;
-  document.getElementById("btn-upg-speed").disabled = state.upgrades.workerSpeed >= UPGRADES.workerSpeed.maxLevel;
-  document.getElementById("btn-upg-egg").disabled = state.upgrades.eggLayTime >= UPGRADES.eggLayTime.maxLevel;
-  document.getElementById("btn-upg-cap").disabled = state.upgrades.foodCap >= UPGRADES.foodCap.maxLevel;
+  var elDmg = document.getElementById("upg-damage"); if (elDmg) elDmg.textContent = fmt("soldierDamage");
+  var elSpd = document.getElementById("upg-speed"); if (elSpd) elSpd.textContent = fmt("workerSpeed");
+  var elEgg = document.getElementById("upg-egg"); if (elEgg) elEgg.textContent = fmt("eggLayTime");
+  var elCap = document.getElementById("upg-cap"); if (elCap) elCap.textContent = fmt("foodCap");
+  var btnDmg = document.getElementById("btn-upg-damage"); if (btnDmg) btnDmg.disabled = state.upgrades.soldierDamage >= UPGRADES.soldierDamage.maxLevel;
+  var btnSpd = document.getElementById("btn-upg-speed"); if (btnSpd) btnSpd.disabled = state.upgrades.workerSpeed >= UPGRADES.workerSpeed.maxLevel;
+  var btnEgg = document.getElementById("btn-upg-egg"); if (btnEgg) btnEgg.disabled = state.upgrades.eggLayTime >= UPGRADES.eggLayTime.maxLevel;
+  var btnCap = document.getElementById("btn-upg-cap"); if (btnCap) btnCap.disabled = state.upgrades.foodCap >= UPGRADES.foodCap.maxLevel;
 }
 
 // Build buttons (unchanged)
@@ -1011,29 +1038,29 @@ function setupButtons() {
 
   // Settings, stats, roadmap, howtoplay, about (unchanged, with safety)
   var btnSettings = document.getElementById("btn-settings-menu");
-  if (btnSettings) btnSettings.onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('settings-panel').style.display = 'flex'; };
+  if (btnSettings) btnSettings.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('settings-panel'); if (sp) sp.style.display = 'flex'; };
   var btnStats = document.getElementById("btn-stats-menu");
-  if (btnStats) btnStats.onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('stats-panel').style.display = 'flex'; refreshStatsUI(); };
+  if (btnStats) btnStats.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('stats-panel'); if (sp) sp.style.display = 'flex'; refreshStatsUI(); };
   var btnRoadmap = document.getElementById("btn-roadmap-menu");
-  if (btnRoadmap) btnRoadmap.onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('roadmap-panel').style.display = 'flex'; refreshRoadmapUI(); };
+  if (btnRoadmap) btnRoadmap.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('roadmap-panel'); if (sp) sp.style.display = 'flex'; refreshRoadmapUI(); };
   var btnHowto = document.getElementById("btn-howtoplay-menu");
-  if (btnHowto) btnHowto.onclick = function() { AudioManager.sfx.buttonClick(); document.getElementById('howtoplay-panel').style.display = 'flex'; };
+  if (btnHowto) btnHowto.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('howtoplay-panel'); if (sp) sp.style.display = 'flex'; };
   // About menu button removed, so no handler needed.
 
   var btnCloseSettings = document.getElementById("btn-close-settings");
-  if (btnCloseSettings) btnCloseSettings.onclick = function() { document.getElementById('settings-panel').style.display = 'none'; };
+  if (btnCloseSettings) btnCloseSettings.onclick = function() { var sp = document.getElementById('settings-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseStats = document.getElementById("btn-close-stats");
-  if (btnCloseStats) btnCloseStats.onclick = function() { document.getElementById('stats-panel').style.display = 'none'; };
+  if (btnCloseStats) btnCloseStats.onclick = function() { var sp = document.getElementById('stats-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseDaily = document.getElementById("btn-close-daily");
-  if (btnCloseDaily) btnCloseDaily.onclick = function() { document.getElementById('daily-panel').style.display = 'none'; };
+  if (btnCloseDaily) btnCloseDaily.onclick = function() { var sp = document.getElementById('daily-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseRoadmap = document.getElementById("btn-close-roadmap");
-  if (btnCloseRoadmap) btnCloseRoadmap.onclick = function() { document.getElementById('roadmap-panel').style.display = 'none'; };
+  if (btnCloseRoadmap) btnCloseRoadmap.onclick = function() { var sp = document.getElementById('roadmap-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseAsc = document.getElementById("btn-close-ascension");
-  if (btnCloseAsc) btnCloseAsc.onclick = function() { document.getElementById('ascension-panel').style.display = 'none'; };
+  if (btnCloseAsc) btnCloseAsc.onclick = function() { var sp = document.getElementById('ascension-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseHowto = document.getElementById("btn-close-howtoplay");
-  if (btnCloseHowto) btnCloseHowto.onclick = function() { document.getElementById('howtoplay-panel').style.display = 'none'; };
+  if (btnCloseHowto) btnCloseHowto.onclick = function() { var sp = document.getElementById('howtoplay-panel'); if (sp) sp.style.display = 'none'; };
   var btnCloseAbout = document.getElementById("btn-close-about");
-  if (btnCloseAbout) btnCloseAbout.onclick = function() { document.getElementById('about-modal').style.display = 'none'; };
+  if (btnCloseAbout) btnCloseAbout.onclick = function() { var sp = document.getElementById('about-modal'); if (sp) sp.style.display = 'none'; };
 
   var toggleSfx = document.getElementById("toggle-sfx");
   if (toggleSfx) toggleSfx.onclick = function() { GameSettings.sfxOn = !GameSettings.sfxOn; AudioManager.setSfx(GameSettings.sfxOn); this.className = 'toggle-switch' + (GameSettings.sfxOn ? ' on' : ''); };
@@ -1068,4 +1095,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-    }
+}
