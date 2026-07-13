@@ -37,6 +37,51 @@ function initDOMRefs() {
 }
 initDOMRefs();
 
+// ---- Attach summon, surge, event listeners (moved from abilities.js) ----
+if (surgeBtn) {
+  surgeBtn.addEventListener("click", function() {
+    if (!state.surgeActive) return;
+    state.surgeActive = false;
+    surgeBtn.style.display = "none";
+    state.surgesCollected++;
+    state.lifetimeStats.totalSurges++;
+    AudioManager.sfx.surge();
+    for (var i = 0; i < BAL.surgeEggs; i++) {
+      state.eggs++;
+      var em = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
+      em.position.copy(qMesh.position);
+      em.position.x += (Math.random() - 0.5) * 1.6;
+      em.position.z += (Math.random() - 0.5) * 1.4;
+      em.scale.setScalar(0.3);
+      scene.add(em);
+      eggMs.push({ mesh: em, mat: em.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: em.position.x, restZ: em.position.z, settling: false, settleT: 0 });
+    }
+    showToast("👑 Surge! +" + BAL.surgeEggs + " eggs");
+    checkAchievements();
+  });
+}
+if (eventBtn) {
+  eventBtn.addEventListener("click", function() {
+    if (!state.eventActive) return;
+    var idx = parseInt(eventBtn.dataset.idx);
+    if (idx >= 0 && idx < EVENTS.length) EVENTS[idx].action();
+    state.eventActive = false;
+    eventBtn.style.display = "none";
+    state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin);
+    showToast("✅ Event collected!");
+  });
+}
+if (summonBtn) {
+  summonBtn.addEventListener("click", function() {
+    if (state.bossActive) { showToast("Boss already active!"); return; }
+    if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
+    state.gems -= BAL.summonCost;
+    spawnBoss();
+    showToast("💀 Boss summoned!");
+    refreshHUD();  // update gem display
+  });
+}
+
 // ---- Close panels on outside click ----
 document.addEventListener('click', function(e) {
   if (!e.target.closest('#alerts-panel') && !e.target.closest('#alerts-pill')) {
@@ -942,4 +987,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-}
+        }
