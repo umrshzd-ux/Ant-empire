@@ -76,16 +76,21 @@ if (eventBtn) {
 }
 if (summonBtn) {
   summonBtn.addEventListener("click", function() {
-    if (typeof spawnBoss !== 'function') {
-      showToast("❌ Boss system not ready. Please wait or reload.");
-      return;
+    try {
+      if (typeof spawnBoss !== 'function') {
+        showToast("❌ Boss system not ready. Please wait or reload.");
+        return;
+      }
+      if (state.bossActive) { showToast("Boss already active!"); return; }
+      if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
+      state.gems -= BAL.summonCost;
+      spawnBoss();
+      showToast("💀 Boss summoned!");
+      refreshHUD();
+    } catch (e) {
+      console.error("Summon error:", e);
+      showToast("❌ Could not summon boss. Try again.");
     }
-    if (state.bossActive) { showToast("Boss already active!"); return; }
-    if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
-    state.gems -= BAL.summonCost;
-    spawnBoss();
-    showToast("💀 Boss summoned!");
-    refreshHUD();
   });
 }
 
@@ -1099,4 +1104,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-                  }
+        }
