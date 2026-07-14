@@ -922,36 +922,8 @@ canvas { display: block; }
       return;
     }
 
-    var lastSlot = SaveManager.getLastSlot();
-    try {
-      if (lastSlot >= 0) {
-        var data = SaveManager.loadGame(lastSlot);
-        if (data) {
-          currentSlot = lastSlot;
-          loadGameData(data);
-          hideMainMenu();
-          initGameSystems();
-          startGameLoop();
-          setTimeout(function() {
-            var offlineData = calculateOfflineProgress();
-            if (offlineData && (offlineData.food > 0 || offlineData.eggs > 0 || offlineData.gems > 0)) {
-              showOfflineModal(offlineData);
-            } else { checkDailyLogin(); }
-          }, 600);
-        } else {
-          showMainMenu();
-        }
-      } else {
-        showMainMenu();
-      }
-    } catch(e) {
-      ld.style.display = 'flex';
-      ld.innerHTML = '<div class="title">⚠️ Startup Error</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+
-        e.toString()+'</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
+    // Always show main menu first, never auto-load
+    showMainMenu();
 
     if (ld) ld.style.display = 'none';
     if (bar) bar.style.width = '100%';
