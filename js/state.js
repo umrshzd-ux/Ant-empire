@@ -148,6 +148,10 @@ function resetStateToDefault(slot) {
   state.caveBossKills = 0; state.swampBossKills = 0; state.mountainBossKills = 0;
   state.hasAscended = false;
   queenScale = BAL.queenBaseScale;
+  // Safety: ensure bossTimer is valid
+  if (!state.bossTimer || state.bossTimer <= 0) {
+    state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
+  }
   recalculateHatchTime();
   updateEggLayTime();
   recalculateFoodCap();
@@ -313,6 +317,10 @@ function loadGameData(data) {
   if (data.currentZone) state.currentZone = data.currentZone;
   if (data.unlockedZonesList) state.unlockedZonesList = data.unlockedZonesList;
   if (data.bossTimer !== undefined) state.bossTimer = data.bossTimer;
+  // Safety: ensure bossTimer is valid after load
+  if (!state.bossTimer || state.bossTimer <= 0) {
+    state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
+  }
   if (data.tutorialsShown) state.tutorialsShown = data.tutorialsShown;
   if (data.lifetimeStats) state.lifetimeStats = data.lifetimeStats;
   if (data.dailyChallengeDate) state.dailyChallengeDate = data.dailyChallengeDate;
