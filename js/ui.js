@@ -43,35 +43,45 @@ if (rallyBtn) rallyBtn.addEventListener("click", activateRally);
 // ---- Attach summon, surge, event listeners ----
 if (surgeBtn) {
   surgeBtn.addEventListener("click", function() {
-    if (!state.surgeActive) return;
-    state.surgeActive = false;
-    surgeBtn.style.display = "none";
-    state.surgesCollected++;
-    state.lifetimeStats.totalSurges++;
-    AudioManager.sfx.surge();
-    for (var i = 0; i < BAL.surgeEggs; i++) {
-      state.eggs++;
-      var em = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
-      em.position.copy(qMesh.position);
-      em.position.x += (Math.random() - 0.5) * 1.6;
-      em.position.z += (Math.random() - 0.5) * 1.4;
-      em.scale.setScalar(0.3);
-      scene.add(em);
-      eggMs.push({ mesh: em, mat: em.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: em.position.x, restZ: em.position.z, settling: false, settleT: 0 });
+    try {
+      if (!state.surgeActive) return;
+      state.surgeActive = false;
+      surgeBtn.style.display = "none";
+      state.surgesCollected++;
+      state.lifetimeStats.totalSurges++;
+      AudioManager.sfx.surge();
+      for (var i = 0; i < BAL.surgeEggs; i++) {
+        state.eggs++;
+        var em = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
+        em.position.copy(qMesh.position);
+        em.position.x += (Math.random() - 0.5) * 1.6;
+        em.position.z += (Math.random() - 0.5) * 1.4;
+        em.scale.setScalar(0.3);
+        scene.add(em);
+        eggMs.push({ mesh: em, mat: em.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: em.position.x, restZ: em.position.z, settling: false, settleT: 0 });
+      }
+      showToast("👑 Surge! +" + BAL.surgeEggs + " eggs");
+      checkAchievements();
+    } catch (e) {
+      console.error("Surge error:", e);
+      showToast("❌ Surge collection failed.");
     }
-    showToast("👑 Surge! +" + BAL.surgeEggs + " eggs");
-    checkAchievements();
   });
 }
 if (eventBtn) {
   eventBtn.addEventListener("click", function() {
-    if (!state.eventActive) return;
-    var idx = parseInt(eventBtn.dataset.idx);
-    if (idx >= 0 && idx < EVENTS.length) EVENTS[idx].action();
-    state.eventActive = false;
-    eventBtn.style.display = "none";
-    state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin);
-    showToast("✅ Event collected!");
+    try {
+      if (!state.eventActive) return;
+      var idx = parseInt(eventBtn.dataset.idx);
+      if (idx >= 0 && idx < EVENTS.length) EVENTS[idx].action();
+      state.eventActive = false;
+      eventBtn.style.display = "none";
+      state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin);
+      showToast("✅ Event collected!");
+    } catch (e) {
+      console.error("Event error:", e);
+      showToast("❌ Event collection failed.");
+    }
   });
 }
 if (summonBtn) {
@@ -396,7 +406,7 @@ function refreshAchievementsUI() {
   list.innerHTML = html;
 }
 
-// Daily challenges (unchanged)
+// Daily challenges
 function getDailyChallengeById(id) {
   for (var i = 0; i < DAILY_CHALLENGE_POOL.length; i++) { if (DAILY_CHALLENGE_POOL[i].id === id) return DAILY_CHALLENGE_POOL[i]; }
   return null;
@@ -436,7 +446,7 @@ function updateDailyProgress(type, amount) {
   refreshDailyUI();
 }
 
-// Lifetime stats (unchanged)
+// Lifetime stats
 function refreshStatsUI() {
   var el = document.getElementById('stats-content');
   if (!el) return;
@@ -461,7 +471,7 @@ function refreshStatsUI() {
 }
 function formatNum(n) { if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return (n / 1000).toFixed(1) + 'K'; return Math.floor(n).toString(); }
 
-// Prestige roadmap (unchanged)
+// Prestige roadmap
 function refreshRoadmapUI() {
   var el = document.getElementById('roadmap-content');
   if (!el) return;
@@ -474,7 +484,7 @@ function refreshRoadmapUI() {
   el.innerHTML = html;
 }
 
-// Offline progress (unchanged)
+// Offline progress
 function calculateOfflineProgress() {
   var now = Date.now();
   var elapsed = (now - state.lastSaveTime) / 1000;
@@ -524,7 +534,7 @@ function showOfflineModal(data) {
   };
 }
 
-// Daily login (unchanged, with null checks)
+// Daily login
 function getTodayString() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
 function checkDailyLogin() {
   closeAllModals();
@@ -572,7 +582,7 @@ function checkDailyLogin() {
 }
 function updateStreakDisplay() { var el = document.getElementById('streak-display'); if (el) el.textContent = "🔥" + state.dailyStreak; }
 
-// Prestige modal (unchanged)
+// Prestige modal
 function showPrestigeModal() {
   closeAllModals();
   if (state.level < BAL.prestigeLevelReq) { showToast("Reach Level " + BAL.prestigeLevelReq + " to prestige!"); return; }
@@ -598,7 +608,6 @@ function performPrestige(ppGain) {
   AudioManager.sfx.prestige(); triggerShake(8, 0.8);
   state.chambers = { foodStorage: { count: 0, bonusCap: 0 }, nursery: { count: 0, hatchReduction: 0 }, soldier: { count: 0 }, research: { count: 0 }, scout: { count: 0 } };
   state.upgrades = { soldierDamage: 0, workerSpeed: 0, eggLayTime: 0, foodCap: 0 };
-  // DO NOT reset state.gemUpgrades – keep permanent purchases
   state.expansionTrips = 0; state.unlockedZones = 0; state.virtualWorkers = 0; state.earlyGameBoost = BAL.earlyGameBoostDuration;
   while (workers.length > 0) { var w = workers.pop(); if (w && w.mesh) { disposeMesh(w.mesh); scene.remove(w.mesh); } }
   while (soldiers.length > 0) { var s = soldiers.pop(); if (s && s.mesh) { disposeMesh(s.mesh); scene.remove(s.mesh); } if (s && s.guardMesh) { disposeMesh(s.guardMesh); scene.remove(s.guardMesh); } }
@@ -637,7 +646,7 @@ function performPrestige(ppGain) {
   refreshHUD(); checkAchievements(); saveGame();
 }
 
-// Ascension modal (unchanged)
+// Ascension modal
 function showAscendModal() {
   if (state.prestigeCount < BAL.ascendUnlockPrestige) { showToast("Reach Prestige " + BAL.ascendUnlockPrestige + " to unlock Ascension!"); return; }
   if (state.bossActive) { showToast("Defeat the boss first!"); return; }
@@ -716,7 +725,7 @@ function clearAllMeshes() {
   var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
 }
 
-// Ascension shop UI (unchanged)
+// Ascension shop UI
 function refreshAscensionShopUI() {
   var list = document.getElementById('ascension-shop-list');
   if (!list) return;
@@ -732,7 +741,7 @@ function refreshAscensionShopUI() {
 }
 window._buyAsc = buyAscensionUpgrade;
 
-// Prestige shop UI (unchanged)
+// Prestige shop UI
 function refreshPrestigeShopUI() {
   var list = document.getElementById('prestige-shop-list');
   if (!list) return;
@@ -763,7 +772,7 @@ function buyPrestigeUpgrade(id) {
 }
 window._buyPP = buyPrestigeUpgrade;
 
-// Evolution UI (unchanged)
+// Evolution UI
 function refreshEvolutionUI() {
   var list = document.getElementById('evo-list');
   if (!list) return;
@@ -791,7 +800,7 @@ function refreshEvolutionUI() {
 }
 window._buyEvo = buyEvolution;
 
-// Upgrade UI (unchanged)
+// Upgrade UI
 function refreshUpgradeUI() {
   function fmt(type) { var lv = state.upgrades[type], max = UPGRADES[type].maxLevel; var cost = lv < max ? getUpgradeCost(type) : 0; return "Lv" + lv + "/" + max + (lv < max ? " " + cost + "🌾" : " MAX"); }
   var elDmg = document.getElementById("upg-damage"); if (elDmg) elDmg.textContent = fmt("soldierDamage");
@@ -804,7 +813,7 @@ function refreshUpgradeUI() {
   var btnCap = document.getElementById("btn-upg-cap"); if (btnCap) btnCap.disabled = state.upgrades.foodCap >= UPGRADES.foodCap.maxLevel;
 }
 
-// Build buttons (unchanged)
+// Build buttons
 function updateBuildButtons() {
   var bfs = document.getElementById("build-food-storage"), bn = document.getElementById("build-nursery"),
       bs = document.getElementById("build-soldier"), br = document.getElementById("build-research"),
@@ -1057,7 +1066,6 @@ function setupButtons() {
   if (btnRoadmap) btnRoadmap.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('roadmap-panel'); if (sp) sp.style.display = 'flex'; refreshRoadmapUI(); };
   var btnHowto = document.getElementById("btn-howtoplay-menu");
   if (btnHowto) btnHowto.onclick = function() { AudioManager.sfx.buttonClick(); var sp = document.getElementById('howtoplay-panel'); if (sp) sp.style.display = 'flex'; };
-  // About menu button removed, so no handler needed.
 
   var btnCloseSettings = document.getElementById("btn-close-settings");
   if (btnCloseSettings) btnCloseSettings.onclick = function() { var sp = document.getElementById('settings-panel'); if (sp) sp.style.display = 'none'; };
@@ -1107,4 +1115,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-}
+  }
