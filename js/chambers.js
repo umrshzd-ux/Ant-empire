@@ -251,4 +251,4 @@ function rebuildAllChambers() {
     }
     scene.add(researchChamberGroup);
   }
-  }
+}
