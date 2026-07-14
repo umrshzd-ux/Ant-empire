@@ -36,13 +36,8 @@ function initThreeJS() {
 
 // ----- Main menu functions -----
 function showMainMenu() {
-  if (animFrameId) {
-    cancelAnimationFrame(animFrameId);
-    animFrameId = null;
-  }
+  if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
   gameLoopActive = false;
-
-  // FIX: prevent offline rewards after short menu visit
   state.lastSaveTime = Date.now();
   saveGame();
 
@@ -51,24 +46,11 @@ function showMainMenu() {
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('canvas-container').style.display = 'none';
 
-  // Clear any leftover game toasts, floaters, tutorials
-  var toastEl = document.getElementById('toast');
-  if (toastEl) { toastEl.style.opacity = '0'; toastEl.textContent = ''; }
-  var floatersEl = document.getElementById('floaters');
-  if (floatersEl) floatersEl.innerHTML = '';
-  var tutEl = document.getElementById('tutorial-toast');
-  if (tutEl) tutEl.style.opacity = '0';
-  var achEl = document.getElementById('achievement-toast');
-  if (achEl) achEl.style.opacity = '0';
-
-  // Hide boss UI and summon button
-  var bossName = document.getElementById('boss-name');
-  var bossBar = document.getElementById('boss-health-bar');
-  if (bossName) bossName.style.display = 'none';
-  if (bossBar) bossBar.style.display = 'none';
-  var summonBtn = document.getElementById('summon-btn');
-  if (summonBtn) summonBtn.style.display = 'none';
-
+  // Clear leftovers
+  var toastEl = document.getElementById('toast'); if (toastEl) { toastEl.style.opacity = '0'; toastEl.textContent = ''; }
+  var floatersEl = document.getElementById('floaters'); if (floatersEl) floatersEl.innerHTML = '';
+  var tutEl = document.getElementById('tutorial-toast'); if (tutEl) tutEl.style.opacity = '0';
+  var achEl = document.getElementById('achievement-toast'); if (achEl) achEl.style.opacity = '0';
   closeAllModals();
 
   renderSlots();
@@ -81,7 +63,7 @@ function hideMainMenu() {
   document.getElementById('canvas-container').style.display = 'block';
 }
 
-// Redesigned renderSlots with delete button
+// renderSlots with delete button (using custom modal)
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -97,7 +79,7 @@ function renderSlots() {
                 '<div class="slot-name">🐜 ' + sl.name + '</div>' +
                 '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
               '</div>' +
-              '<button class="delete-colony-btn" onclick="event.stopPropagation();deleteSlot(' + i + ')" title="Delete colony">🗑️</button>' +
+              '<button class="delete-colony-btn" onclick="event.stopPropagation();showDeleteModal(' + i + ')" title="Delete colony">🗑️</button>' +
             '</div>';
     } else {
       html += '<div class="slot-empty">+ New Colony</div>';
@@ -105,6 +87,31 @@ function renderSlots() {
     html += '</div>';
   }
   document.getElementById('save-slots').innerHTML = html;
+}
+
+// Custom delete modal
+function showDeleteModal(slot) {
+  var modal = document.getElementById('delete-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  document.getElementById('delete-confirm').onclick = function() {
+    performDelete(slot);
+    modal.style.display = 'none';
+  };
+  document.getElementById('delete-cancel').onclick = function() {
+    modal.style.display = 'none';
+  };
+}
+
+function performDelete(slot) {
+  SaveManager.deleteSlot(slot);
+  // If the deleted slot is the currently loaded one, reset the game to main menu
+  if (currentSlot === slot) {
+    currentSlot = -1;
+    showMainMenu();
+  } else {
+    renderSlots();
+  }
 }
 
 window.loadSlot = function(slot) {
@@ -121,7 +128,6 @@ window.loadSlot = function(slot) {
   initGameSystems();
   startGameLoop();
   AudioManager.sfx.buttonClick();
-  // Force boss timer update
   updateBossTimer();
   setTimeout(function() {
     var offlineData = calculateOfflineProgress();
@@ -132,36 +138,15 @@ window.loadSlot = function(slot) {
 };
 
 window.deleteSlot = function(slot) {
-  if (confirm('Delete this colony? This cannot be undone.')) {
-    SaveManager.deleteSlot(slot);
-    renderSlots();
-  }
+  showDeleteModal(slot);
 };
 
-// ----- Screenshake -----
+// Screenshake (unchanged)
 var shakeIntensity = 0, shakeDuration = 0;
-function triggerShake(intensity, duration) {
-  if (!GameSettings.shakeOn) return;
-  shakeIntensity = intensity;
-  shakeDuration = duration;
-  if (typeof AudioManager !== 'undefined') AudioManager.sfx.shake();
-}
-function updateShake(dt) {
-  var el = document.getElementById('canvas-container');
-  if (shakeDuration > 0) {
-    shakeDuration -= dt;
-    var sx = (Math.random() - 0.5) * shakeIntensity * 2;
-    var sy = (Math.random() - 0.5) * shakeIntensity * 2;
-    el.style.transition = 'none';
-    el.style.transform = 'translate(' + sx + 'px,' + sy + 'px)';
-  } else if (shakeIntensity > 0) {
-    shakeIntensity = 0;
-    el.style.transition = 'transform 0.05s ease-out';
-    el.style.transform = 'translate(0,0)';
-  }
-}
+function triggerShake(intensity, duration) { if (!GameSettings.shakeOn) return; shakeIntensity = intensity; shakeDuration = duration; if (typeof AudioManager !== 'undefined') AudioManager.sfx.shake(); }
+function updateShake(dt) { var el = document.getElementById('canvas-container'); if (shakeDuration > 0) { shakeDuration -= dt; var sx = (Math.random() - 0.5) * shakeIntensity * 2; var sy = (Math.random() - 0.5) * shakeIntensity * 2; el.style.transition = 'none'; el.style.transform = 'translate(' + sx + 'px,' + sy + 'px)'; } else if (shakeIntensity > 0) { shakeIntensity = 0; el.style.transition = 'transform 0.05s ease-out'; el.style.transform = 'translate(0,0)'; } }
 
-// ----- Tutorials -----
+// Tutorials (unchanged)
 var tutorialMessages = [
   { id: "firstLoad", condition: function() { return state.level === 1 && state.chambers.foodStorage.count === 0; }, text: "🌾 Build a Food Storage to expand!", duration: 6 },
   { id: "researchBuilt", condition: function() { return state.chambers.research.count === 1 && !state.tutorialsShown.researchBuilt; }, text: "🧬 Upgrades & Shop unlocked. Evolution at Lv" + BAL.evolutionUnlockLevel + ".", duration: 5 },
@@ -198,7 +183,7 @@ function updateTutorial(dt) {
   }
 }
 
-// ----- Zone management -----
+// Zone management (unchanged)
 function checkZoneUnlocks() {
   var trips = state.expansionTrips;
   var zoneOrder = ["meadow", "forestEdge", "riverside", "deepWoods", "cave", "swamp", "mountain"];
@@ -231,7 +216,7 @@ function switchZone(zoneId) {
   showToast("Moved to " + cfg.name + "!");
 }
 
-// ----- Evolution purchase -----
+// Evolution, Ascension upgrades (unchanged)
 function buyEvolution(type) {
   var evo = EVOLUTION_TREE[type];
   var ct = state.evolution[type] || 0;
@@ -254,8 +239,6 @@ function buyEvolution(type) {
   refreshEvolutionUI();
   refreshHUD();
 }
-
-// ----- Ascension upgrade -----
 function buyAscensionUpgrade(id) {
   var item = null;
   for (var i = 0; i < ASCENSION_SHOP.length; i++) { if (ASCENSION_SHOP[i].id === id) { item = ASCENSION_SHOP[i]; break; } }
@@ -274,37 +257,29 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop -----
+// ----- Main loop (with rain throttle) -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 
 function startGameLoop() {
   gameLoopActive = true;
   state.lastTime = performance.now();
-  state.lastSaveTime = Date.now();   // prevent stale offline time
+  state.lastSaveTime = Date.now();
+
   function animate() {
-    if (!gameLoopActive) {
-      animFrameId = null;
-      return;
-    }
+    if (!gameLoopActive) { animFrameId = null; return; }
     animFrameId = requestAnimationFrame(animate);
     try {
       var now = performance.now();
-      var dt = (now - state.lastTime) / 1000;
-      dt = Math.min(dt, 0.1);
+      var dt = (now - state.lastTime) / 1000; dt = Math.min(dt, 0.1);
       state.lastTime = now;
       state.lifetimeStats.totalPlayTime = (state.lifetimeStats.totalPlayTime || 0) + dt;
 
       if (typeof updateInertia === 'function') updateInertia(dt);
-      updateParticles(dt);
-      updateShake(dt);
-      updateTutorial(dt);
-      updateQueenIdle(dt);
+      updateParticles(dt); updateShake(dt); updateTutorial(dt); updateQueenIdle(dt);
 
-      // Update boost timers
       if (state.speedBoostTimer > 0) { state.speedBoostTimer -= dt; if (state.speedBoostTimer <= 0) applyAllWorkerSpeeds(); }
       if (state.luckyHourTimer > 0) { state.luckyHourTimer -= dt; }
       if (state.defenseBannerTimer > 0) { state.defenseBannerTimer -= dt; }
-
       if (state.virtualWorkers > 0) addFood(state.virtualWorkers * BAL.virtualFoodPerSecond * dt);
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
@@ -315,10 +290,9 @@ function startGameLoop() {
         if (window._lastRainUpdate >= 0.03) {
           window._lastRainUpdate = 0;
           for (var ri = 0; ri < rainDrops.length; ri++) {
-            var drop = rainDrops[ri];
-            if (!drop.visible) continue;
+            var drop = rainDrops[ri]; if (!drop.visible) continue;
             drop.position.y -= drop.userData.speed * dt;
-            if (drop.position.y < -1) { drop.position.y = 12 + Math.random() * 3; drop.position.x = -SW / 2 + Math.random() * SW; drop.position.z = -SD / 2 + Math.random() * SD; }
+            if (drop.position.y < -1) { drop.position.y = 12 + Math.random() * 3; drop.position.x = -SW/2 + Math.random()*SW; drop.position.z = -SD/2 + Math.random()*SD; }
           }
         }
       }
@@ -444,7 +418,7 @@ function startGameLoop() {
           }
         }
       }
-      combatUpdate(dt);  // Note: defense banner effect applied inside combatUpdate
+      combatUpdate(dt);
 
       for (var si = 0; si < soldiers.length; si++) updateHealthBar(soldiers[si].healthBar, soldiers[si].health / soldiers[si].maxHealth);
       for (var ei = 0; ei < enemies.length; ei++) updateHealthBar(enemies[ei].healthBar, enemies[ei].health / enemies[ei].maxHealth);
@@ -488,16 +462,11 @@ function startGameLoop() {
       if (sC > 10) { sC = 0; state.lastSaveTime = Date.now(); saveGame(); }
 
       renderer.render(scene, camera);
-    } catch(e) {
-      console.error('Loop error:', e);
-      if (sC > 5) { sC = 0; showToast("⚠️ Minor hiccup — colony survived!"); }
-    }
+    } catch(e) { console.error('Loop error:', e); if (sC > 5) { sC = 0; showToast("⚠️ Minor hiccup — colony survived!"); } }
   }
   animate();
 }
 
-// ----- Init all game systems -----
-var gameSystemsReady = false;
 function initGameSystems() {
   if (gameSystemsReady) { clearAllMeshes(); gameSystemsReady = false; }
   buildTerrain();
@@ -527,6 +496,3 @@ function initGameSystems() {
 }
 
 initThreeJS();
-
-// The following functions are defined in other files but called here; they are already included.
-// performPrestige is defined in ui.js, not here. The change in ui.js ensures gemUpgrades are kept.
