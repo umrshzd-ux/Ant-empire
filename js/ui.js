@@ -84,13 +84,13 @@ if (summonBtn) {
       if (state.bossActive) { showToast("Boss already active!"); return; }
       if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
       state.gems -= BAL.summonCost;
-      summonBtn.disabled = true;   // prevent double-click
+      summonBtn.disabled = true;
       spawnBoss();
       showToast("💀 Boss summoned!");
-      refreshHUD();               // re‑enables/hides button based on boss state
+      refreshHUD();
     } catch (e) {
       console.error("Summon error:", e);
-      state.gems += BAL.summonCost; // refund
+      state.gems += BAL.summonCost;
       showToast("❌ Could not summon boss. Try again.");
       refreshHUD();
     }
@@ -114,7 +114,7 @@ var resourcesCloseBtn = document.getElementById('resources-close-btn');
 if (resourcesCloseBtn) resourcesCloseBtn.onclick = function() { if (elResourcesPanel) elResourcesPanel.style.display = 'none'; };
 
 function closeAllModals() {
-  ['offline-modal', 'daily-modal', 'prestige-modal', 'ascend-modal', 'about-modal'].forEach(function(id) {
+  ['offline-modal', 'daily-modal', 'prestige-modal', 'ascend-modal', 'about-modal', 'delete-modal'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display = 'none';
   });
 }
@@ -1107,4 +1107,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-      }
+}
