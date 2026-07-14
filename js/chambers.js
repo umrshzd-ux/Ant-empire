@@ -1,11 +1,9 @@
 // ===== CHAMBERS, STOCKPILE, NURSERY CLUSTERS, TUNNEL LIGHTS =====
 
-// Chamber meshes
 var queenChamberGroup, storageChambers = [], nurseryChambers = [], soldierChambers = [],
     researchChambers = [], scoutChambers = [], storagePiles = [], nurseryEggClusters = [],
     researchChamberGroup = null, barracksSoldiers = [];
 
-// Queen chamber walls
 function buildQueenChamberWalls() {
   if (!queenChamberGroup) {
     queenChamberGroup = new THREE.Group();
@@ -35,7 +33,6 @@ function buildQueenChamberWalls() {
   }
 }
 
-// Generic chamber mesh
 function makeChamber(x, y, z, w, h, d, col) {
   var g = new THREE.Group();
   var m = new THREE.MeshStandardMaterial({ color: col, roughness: 0.95 });
@@ -57,7 +54,6 @@ function makeChamber(x, y, z, w, h, d, col) {
   return g;
 }
 
-// Sprite label
 function makeLabel(text, x, y, z, w, h, underground) {
   var c = document.createElement("canvas");
   c.width = w || 256;
@@ -89,7 +85,6 @@ function makeLabel(text, x, y, z, w, h, underground) {
   return s;
 }
 
-// Helpers for chamber positions
 function getNextStorageX() { return TX + 5 + state.chambers.foodStorage.count * 3.5; }
 function getNextSoldierX() { return TX + 5 + BAL.soldierRowStart + state.chambers.soldier.count * 3.5; }
 function getNextResearchX() { return TX + 5 + BAL.researchRowStart + state.chambers.research.count * 3.5; }
@@ -100,13 +95,17 @@ function rebuildChambersFromSave() {
   makeLabel("🏠 Nest", TX, GTY + 1.2, TCZ);
 }
 
-// Storage piles (food fullness)
 var storagePilesDirty = true;
 function updateStoragePiles() {
   var fillRatio = Math.min(1, state.food / Math.max(1, state.foodCap));
   for (var si = 0; si < storagePiles.length; si++) {
     var pile = storagePiles[si];
-    while (pile.children.length > 0) pile.remove(pile.children[0]);
+    // Properly dispose old children to prevent memory leak
+    while (pile.children.length > 0) {
+      var child = pile.children[0];
+      disposeMesh(child);
+      pile.remove(child);
+    }
     var crumbCount = Math.floor(fillRatio * 20);
     for (var i = 0; i < crumbCount; i++) {
       var crumb = new THREE.Mesh(new THREE.SphereGeometry(0.08 + Math.random() * 0.04, 4, 4), new THREE.MeshStandardMaterial({ color: 0xe0b15a, roughness: 0.6 }));
@@ -116,11 +115,15 @@ function updateStoragePiles() {
   }
 }
 
-// Nursery egg clusters
 function updateNurseryClusters() {
   for (var ci = 0; ci < nurseryEggClusters.length; ci++) {
     var cluster = nurseryEggClusters[ci];
-    while (cluster.children.length > 0) cluster.remove(cluster.children[0]);
+    // Properly dispose old children
+    while (cluster.children.length > 0) {
+      var child = cluster.children[0];
+      disposeMesh(child);
+      cluster.remove(child);
+    }
     var eggCount = Math.min(6, state.eggs);
     for (var i = 0; i < eggCount; i++) {
       var egg = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.3, emissive: 0xffeecc, emissiveIntensity: 0.3 }));
@@ -130,7 +133,6 @@ function updateNurseryClusters() {
   }
 }
 
-// Nest evolution visuals
 function evolveNestVisuals(newLevel, silent) {
   state.nestEvolutionLevel = newLevel;
   var scale = 1 + newLevel * 0.15;
@@ -165,7 +167,6 @@ function evolveNestVisuals(newLevel, silent) {
   if (!silent) showToast("🏠 Nest evolved to Level " + newLevel + "!");
 }
 
-// Tunnel lights
 var cLight, qgLight, qgSphere;
 function initTunnelLights() {
   cLight = new THREE.PointLight(0xffd9a0, 1.6, 11);
@@ -183,13 +184,9 @@ function initTunnelLights() {
 }
 initTunnelLights();
 
-// Food station slots
 function claimStationSlot(st, w) {
   for (var i = 0; i < SPS; i++) {
-    if (st.slotOccupants[i] === null) {
-      st.slotOccupants[i] = w;
-      return i;
-    }
+    if (st.slotOccupants[i] === null) { st.slotOccupants[i] = w; return i; }
   }
   var fallback = (w.id !== undefined) ? w.id % SPS : Math.floor(Math.random() * SPS);
   return fallback;
@@ -209,7 +206,6 @@ function addStockpileCrumb() {
   stockpile.add(c);
 }
 
-// Rebuild all chambers from state (used after prestige/ascension)
 function rebuildAllChambers() {
   while (storageChambers.length > 0) { var ch = storageChambers.pop(); if (ch) { disposeMesh(ch); scene.remove(ch); } }
   while (nurseryChambers.length > 0) { var ch = nurseryChambers.pop(); if (ch) { disposeMesh(ch); scene.remove(ch); } }
@@ -255,4 +251,4 @@ function rebuildAllChambers() {
     }
     scene.add(researchChamberGroup);
   }
-        }
+  }
