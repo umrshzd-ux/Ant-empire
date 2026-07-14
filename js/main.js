@@ -2,6 +2,7 @@
 
 var container, scene, camera, renderer, hLight, sLight, fLight, raycaster;
 var gameLoopActive = false;
+var gameSystemsReady = false;   // <-- moved here to prevent any missing definition
 
 function initThreeJS() {
   container = document.getElementById("canvas-container");
@@ -46,7 +47,6 @@ function showMainMenu() {
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('canvas-container').style.display = 'none';
 
-  // Clear leftovers
   var toastEl = document.getElementById('toast'); if (toastEl) { toastEl.style.opacity = '0'; toastEl.textContent = ''; }
   var floatersEl = document.getElementById('floaters'); if (floatersEl) floatersEl.innerHTML = '';
   var tutEl = document.getElementById('tutorial-toast'); if (tutEl) tutEl.style.opacity = '0';
@@ -63,7 +63,6 @@ function hideMainMenu() {
   document.getElementById('canvas-container').style.display = 'block';
 }
 
-// renderSlots with delete button (using custom modal)
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -89,7 +88,6 @@ function renderSlots() {
   document.getElementById('save-slots').innerHTML = html;
 }
 
-// Custom delete modal
 function showDeleteModal(slot) {
   var modal = document.getElementById('delete-modal');
   if (!modal) return;
@@ -140,12 +138,12 @@ window.deleteSlot = function(slot) {
   showDeleteModal(slot);
 };
 
-// Screenshake (unchanged)
+// Screenshake
 var shakeIntensity = 0, shakeDuration = 0;
 function triggerShake(intensity, duration) { if (!GameSettings.shakeOn) return; shakeIntensity = intensity; shakeDuration = duration; if (typeof AudioManager !== 'undefined') AudioManager.sfx.shake(); }
 function updateShake(dt) { var el = document.getElementById('canvas-container'); if (shakeDuration > 0) { shakeDuration -= dt; var sx = (Math.random() - 0.5) * shakeIntensity * 2; var sy = (Math.random() - 0.5) * shakeIntensity * 2; el.style.transition = 'none'; el.style.transform = 'translate(' + sx + 'px,' + sy + 'px)'; } else if (shakeIntensity > 0) { shakeIntensity = 0; el.style.transition = 'transform 0.05s ease-out'; el.style.transform = 'translate(0,0)'; } }
 
-// Tutorials (unchanged)
+// Tutorials
 var tutorialMessages = [
   { id: "firstLoad", condition: function() { return state.level === 1 && state.chambers.foodStorage.count === 0; }, text: "🌾 Build a Food Storage to expand!", duration: 6 },
   { id: "researchBuilt", condition: function() { return state.chambers.research.count === 1 && !state.tutorialsShown.researchBuilt; }, text: "🧬 Upgrades & Shop unlocked. Evolution at Lv" + BAL.evolutionUnlockLevel + ".", duration: 5 },
@@ -182,7 +180,7 @@ function updateTutorial(dt) {
   }
 }
 
-// Zone management (unchanged)
+// Zone management
 function checkZoneUnlocks() {
   var trips = state.expansionTrips;
   var zoneOrder = ["meadow", "forestEdge", "riverside", "deepWoods", "cave", "swamp", "mountain"];
@@ -215,7 +213,7 @@ function switchZone(zoneId) {
   showToast("Moved to " + cfg.name + "!");
 }
 
-// Evolution, Ascension upgrades (unchanged)
+// Evolution, Ascension upgrades
 function buyEvolution(type) {
   var evo = EVOLUTION_TREE[type];
   var ct = state.evolution[type] || 0;
@@ -282,7 +280,7 @@ function startGameLoop() {
       if (state.virtualWorkers > 0) addFood(state.virtualWorkers * BAL.virtualFoodPerSecond * dt);
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
-      // Rain update with throttling for performance
+      // Rain update with throttling
       if (state.weatherActive && state.weatherType === "rain") {
         if (!window._lastRainUpdate) window._lastRainUpdate = 0;
         window._lastRainUpdate += dt;
@@ -465,9 +463,6 @@ function startGameLoop() {
   }
   animate();
 }
-
-// ----- Init all game systems -----
-var gameSystemsReady = false;   // <-- THIS IS THE MISSING LINE
 
 function initGameSystems() {
   if (gameSystemsReady) { clearAllMeshes(); gameSystemsReady = false; }
