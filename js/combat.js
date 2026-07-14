@@ -75,92 +75,108 @@ function getBossTypeForZone() {
   return available[Math.floor(Math.random() * available.length)];
 }
 
+var _bossSpawning = false;
+
 function spawnBoss() {
-  try {
-    if (state.bossActive) return;
-    state.bossActive = true;
-    var bossKey = getBossTypeForZone();
-    var bt = BOSS_TYPES[bossKey];
-    state.bossType = bossKey;
-    var cfg = getCurrentZoneConfig();
-    var hpMult = 1 + state.prestigeCount * 0.3;
-    var bossHealth = Math.floor(BAL[bt.hpKey] * hpMult * cfg.enemyMult);
-    state.bossMaxHealth = bossHealth;
-    state.bossHealth = bossHealth;
-    var bossMesh = new THREE.Group();
-    var bodyMat = new THREE.MeshStandardMaterial({ color: bt.color, roughness: 0.2, metalness: 0.4 });
-    var abdomen = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 12), bodyMat);
-    abdomen.position.set(0, 0.4, -0.5);
-    abdomen.scale.set(1, 0.8, 1.5);
-    abdomen.castShadow = true;
-    bossMesh.add(abdomen);
-    var thorax = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), bodyMat);
-    thorax.position.set(0, 0.5, 0.5);
-    thorax.castShadow = true;
-    bossMesh.add(thorax);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), bodyMat);
-    head.position.set(0, 0.5, 1.0);
-    head.castShadow = true;
-    bossMesh.add(head);
-    var eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
-    [-0.12, 0.12].forEach(function(sd) {
-      var eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
-      eye.position.set(sd, 0.6, 1.15);
-      bossMesh.add(eye);
-    });
-    var legMat = new THREE.MeshStandardMaterial({ color: bt.legColor, roughness: 0.3 });
-    for (var i = 0; i < 8; i++) {
-      var angle = (i / 8) * Math.PI * 2;
-      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.2, 4), legMat);
-      leg.position.set(Math.cos(angle) * 0.7, 0.2, Math.sin(angle) * 0.5);
-      leg.rotation.z = Math.cos(angle) * 0.4;
-      leg.rotation.x = 0.5;
-      leg.castShadow = true;
-      bossMesh.add(leg);
+  if (_bossSpawning) return;
+  _bossSpawning = true;
+
+  setTimeout(function() {
+    try {
+      if (state.bossActive) { _bossSpawning = false; return; }
+      state.bossActive = true;
+      var bossKey = getBossTypeForZone();
+      var bt = BOSS_TYPES[bossKey];
+      state.bossType = bossKey;
+      var cfg = getCurrentZoneConfig();
+      var hpMult = 1 + state.prestigeCount * 0.3;
+      var bossHealth = Math.floor(BAL[bt.hpKey] * hpMult * cfg.enemyMult);
+      state.bossMaxHealth = bossHealth;
+      state.bossHealth = bossHealth;
+
+      var bossMesh = new THREE.Group();
+      var bodyMat = new THREE.MeshStandardMaterial({ color: bt.color, roughness: 0.2, metalness: 0.4 });
+      var abdomen = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 12), bodyMat);
+      abdomen.position.set(0, 0.4, -0.5);
+      abdomen.scale.set(1, 0.8, 1.5);
+      abdomen.castShadow = true;
+      bossMesh.add(abdomen);
+      var thorax = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 10), bodyMat);
+      thorax.position.set(0, 0.5, 0.5);
+      thorax.castShadow = true;
+      bossMesh.add(thorax);
+      var head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), bodyMat);
+      head.position.set(0, 0.5, 1.0);
+      head.castShadow = true;
+      bossMesh.add(head);
+      var eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
+      [-0.12, 0.12].forEach(function(sd) {
+        var eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), eyeMat);
+        eye.position.set(sd, 0.6, 1.15);
+        bossMesh.add(eye);
+      });
+      var legMat = new THREE.MeshStandardMaterial({ color: bt.legColor, roughness: 0.3 });
+      for (var i = 0; i < 8; i++) {
+        var angle = (i / 8) * Math.PI * 2;
+        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.2, 4), legMat);
+        leg.position.set(Math.cos(angle) * 0.7, 0.2, Math.sin(angle) * 0.5);
+        leg.rotation.z = Math.cos(angle) * 0.4;
+        leg.rotation.x = 0.5;
+        leg.castShadow = true;
+        bossMesh.add(leg);
+      }
+      var sx = SW / 2 - 5, sz = (Math.random() - 0.5) * (SD - 8);
+      bossMesh.position.set(sx, GTY + 0.5, sz);
+      scene.add(bossMesh);
+
+      var hb = typeof createHealthBar === 'function' ? createHealthBar(bossMesh, 120, 12, 1.8) : null;
+      var hbFill = document.getElementById('boss-health-fill');
+      if (hbFill) {
+        var colorMap = { beetle: "#888800", wasp: "#cccc00", centipede: "#886644", hydra: "#44aa44", wyrm: "#4488ff" };
+        hbFill.style.background = colorMap[bossKey] || "#cc0000";
+      }
+      state.currentBoss = {
+        mesh: bossMesh,
+        health: bossHealth,
+        maxHealth: bossHealth,
+        healthBar: hb,
+        speed: BAL[bt.spdKey],
+        target: ER.clone(),
+        attackCooldown: 0,
+        lastAttack: 0,
+        bossKey: bossKey,
+        special: bt.special || null
+      };
+      var bossNameEl = document.getElementById('boss-name');
+      if (bossNameEl) {
+        bossNameEl.textContent = bt.icon + " " + bt.name;
+        bossNameEl.style.color = (bossKey === "beetle" ? "#888800" : bossKey === "wasp" ? "#cccc00" : bossKey === "centipede" ? "#886644" : bossKey === "hydra" ? "#44aa44" : bossKey === "wyrm" ? "#4488ff" : "#ff4444");
+        bossNameEl.style.display = "block";
+      }
+      var bossBar = document.getElementById('boss-health-bar');
+      if (bossBar) bossBar.style.display = "block";
+      AudioManager.sfx.bossSpawn();
+      triggerShake(6, 0.5);
+      showToast("💀 " + bt.name + " appeared!");
+    } catch (e) {
+      console.error("spawnBoss error:", e);
+      state.bossActive = false;
+      showToast("❌ Boss spawn failed. Please try again.");
     }
-    var sx = SW / 2 - 5, sz = (Math.random() - 0.5) * (SD - 8);
-    bossMesh.position.set(sx, GTY + 0.5, sz);
-    scene.add(bossMesh);
-    var hb = createHealthBar(bossMesh, 120, 12, 1.8);
-    var hbFill = document.getElementById('boss-health-fill');
-    if (hbFill) {
-      var colorMap = { beetle: "#888800", wasp: "#cccc00", centipede: "#886644", hydra: "#44aa44", wyrm: "#4488ff" };
-      hbFill.style.background = colorMap[bossKey] || "#cc0000";
-    }
-    state.currentBoss = {
-      mesh: bossMesh,
-      health: bossHealth,
-      maxHealth: bossHealth,
-      healthBar: hb,
-      speed: BAL[bt.spdKey],
-      target: ER.clone(),
-      attackCooldown: 0,
-      lastAttack: 0,
-      bossKey: bossKey,
-      special: bt.special || null
-    };
-    var bossNameEl = document.getElementById('boss-name');
-    if (bossNameEl) {
-      bossNameEl.textContent = bt.icon + " " + bt.name;
-      bossNameEl.style.color = (bossKey === "beetle" ? "#888800" : bossKey === "wasp" ? "#cccc00" : bossKey === "centipede" ? "#886644" : bossKey === "hydra" ? "#44aa44" : bossKey === "wyrm" ? "#4488ff" : "#ff4444");
-      bossNameEl.style.display = "block";
-    }
-    var bossBar = document.getElementById('boss-health-bar');
-    if (bossBar) bossBar.style.display = "block";
-    AudioManager.sfx.bossSpawn();
-    triggerShake(6, 0.5);
-    showToast("💀 " + bt.name + " appeared!");
-  } catch (e) {
-    console.error("spawnBoss error:", e);
-    state.bossActive = false;
-    showToast("❌ Boss spawn failed. Please try again.");
-  }
+    _bossSpawning = false;
+    // Do NOT re-enable summon button here – updateSummonButton() handles visibility.
+  }, 10);
 }
 
 function updateBoss(dt) {
   if (!state.bossActive || !state.currentBoss) return;
   var boss = state.currentBoss;
   var bt = BOSS_TYPES[boss.bossKey];
+  if (!bt) {
+    console.error("Unknown boss type:", boss.bossKey);
+    killBoss();   // remove the broken boss safely
+    return;
+  }
   state.bossHealth = boss.health;
   var hbFill = document.getElementById('boss-health-fill');
   if (hbFill) hbFill.style.width = Math.max(0, (boss.health / boss.maxHealth) * 100) + "%";
@@ -185,7 +201,13 @@ function updateBoss(dt) {
         boss.attackCooldown = 2.0;
         boss.lastAttack = now;
         updateHealthBar(soldiers[i].healthBar, soldiers[i].health / soldiers[i].maxHealth);
-        if (boss.special === "poison") { soldiers[i].damageMultiplier = 0.7; setTimeout(function() { soldiers[i].damageMultiplier = 1; }, 5000); }
+        if (boss.special === "poison") {
+          // Capture the soldier in a closure to avoid stale reference
+          (function(soldier) {
+            soldier.damageMultiplier = 0.7;
+            setTimeout(function() { if (soldier) soldier.damageMultiplier = 1; }, 5000);
+          })(soldiers[i]);
+        }
         if (boss.special === "freeze") { soldiers[i].freezeTimer = 3.0; }
         if (soldiers[i].health <= 0) soldierDied(soldiers[i]);
         break;
@@ -215,9 +237,12 @@ function updateBoss(dt) {
 
 function killBoss() {
   var boss = state.currentBoss;
+  if (!boss) return;
   var bossKey = boss.bossKey;
-  disposeMesh(boss.mesh);
-  scene.remove(boss.mesh);
+  if (boss.mesh) {
+    disposeMesh(boss.mesh);
+    scene.remove(boss.mesh);
+  }
   state.bossActive = false;
   state.currentBoss = null;
   state.bossKills++;
@@ -233,9 +258,11 @@ function killBoss() {
   var foodReward = BAL.bossRewardFood + cfg.foodBonus * 10;
   var gemReward = BAL.bossRewardGems + (bossKey === "wasp" ? 2 : 0);
   if (state.ascensionUpgrades.monarchMight > 0) { foodReward *= 2; gemReward *= 2; }
-  addFood(foodReward, boss.mesh.position);
+  if (boss.mesh) {
+    addFood(foodReward, boss.mesh.position);
+    emitParticles(boss.mesh.position, 15, bossKey === "wasp" ? 0xffff00 : (bossKey === "centipede" ? 0x886644 : 0xff4444), 0.08, 2.0, 0.8);
+  }
   addGems(gemReward);
-  emitParticles(boss.mesh.position, 15, bossKey === "wasp" ? 0xffff00 : (bossKey === "centipede" ? 0x886644 : 0xff4444), 0.08, 2.0, 0.8);
   var bossNameEl = document.getElementById('boss-name');
   if (bossNameEl) bossNameEl.style.display = "none";
   var bossBar = document.getElementById('boss-health-bar');
@@ -252,6 +279,7 @@ function summonBoss() {
   if (state.bossActive) { showToast("Boss already active!"); return; }
   if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
   state.gems -= BAL.summonCost;
+  if (summonBtn) summonBtn.disabled = true;
   spawnBoss();
   showToast("💀 Boss summoned!");
-}
+                                  }
