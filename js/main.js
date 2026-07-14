@@ -47,7 +47,7 @@ function showMainMenu() {
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('canvas-container').style.display = 'none';
 
-  // Force hide boss UI
+  // Force hide boss-related UI
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
@@ -70,14 +70,14 @@ function hideMainMenu() {
   document.getElementById('bottom-bar').style.display = 'flex';
   document.getElementById('canvas-container').style.display = 'block';
 
-  // Boss UI will be hidden until a boss spawns
+  // Boss UI will be managed by the game loop, start hidden
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
   if (bossBar) bossBar.style.display = 'none';
 }
 
-// renderSlots – no inline onclick, uses delegation
+// ----- Save slot rendering (NO inline onclick, direct listeners) -----
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -101,31 +101,34 @@ function renderSlots() {
     html += '</div>';
   }
   document.getElementById('save-slots').innerHTML = html;
-}
 
-// Delegated click handling for save slots and delete button
-document.addEventListener('DOMContentLoaded', function() {
-  var slotsContainer = document.getElementById('save-slots');
-  if (slotsContainer) {
-    slotsContainer.addEventListener('click', function(e) {
-      var deleteBtn = e.target.closest('.delete-colony-btn');
-      if (deleteBtn) {
-        e.stopPropagation();
-        var slot = parseInt(deleteBtn.getAttribute('data-slot'));
-        if (!isNaN(slot)) showDeleteModal(slot);
-        return;
-      }
-      // Otherwise, check if click was inside a save-slot (not empty part)
-      var slotDiv = e.target.closest('.save-slot');
-      if (slotDiv) {
-        var slot = parseInt(slotDiv.getAttribute('data-slot'));
-        if (!isNaN(slot)) {
-          loadSlot(slot);
-        }
-      }
-    });
+  // Attach direct event listeners to each delete button and save-slot
+  var saveSlotDivs = document.querySelectorAll('#save-slots .save-slot');
+  for (var j = 0; j < saveSlotDivs.length; j++) {
+    var slotDiv = saveSlotDivs[j];
+    var slotIndex = parseInt(slotDiv.getAttribute('data-slot'));
+
+    // Click on the whole card (but NOT on the delete button)
+    slotDiv.addEventListener('click', function(slot) {
+      return function(e) {
+        // If the click came from the delete button, do nothing
+        if (e.target.closest('.delete-colony-btn')) return;
+        loadSlot(slot);
+      };
+    }(slotIndex));
+
+    // Click on the delete button inside this card
+    var delBtn = slotDiv.querySelector('.delete-colony-btn');
+    if (delBtn) {
+      delBtn.addEventListener('click', function(slot) {
+        return function(e) {
+          e.stopPropagation();
+          showDeleteModal(slot);
+        };
+      }(slotIndex));
+    }
   }
-});
+}
 
 function showDeleteModal(slot) {
   var modal = document.getElementById('delete-modal');
@@ -165,7 +168,7 @@ window.loadSlot = function(slot) {
   startGameLoop();
   AudioManager.sfx.buttonClick();
   updateBossTimer();
-  // Force hide boss UI until a boss actually spawns
+  // Ensure boss UI is hidden
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
@@ -304,6 +307,14 @@ function startGameLoop() {
   gameLoopActive = true;
   state.lastTime = performance.now();
   state.lastSaveTime = Date.now();
+
+  // Hide boss UI at loop start
+  var bossName = document.getElementById('boss-name');
+  if (bossName) bossName.style.display = 'none';
+  var bossBar = document.getElementById('boss-health-bar');
+  if (bossBar) bossBar.style.display = 'none';
+  var summonBtn = document.getElementById('summon-btn');
+  if (summonBtn) summonBtn.style.display = 'none';
 
   function animate() {
     if (!gameLoopActive) { animFrameId = null; return; }
@@ -534,11 +545,13 @@ function initGameSystems() {
   refreshAchievementsUI(); refreshPrestigeShopUI(); refreshEvolutionUI(); refreshHUD(); refreshDailyUI(); refreshStatsUI(); refreshRoadmapUI();
   gameSystemsReady = true;
 
-  // Ensure boss UI is hidden when starting a new game
+  // Final hide of boss UI
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
   if (bossBar) bossBar.style.display = 'none';
+  var summonBtn = document.getElementById('summon-btn');
+  if (summonBtn) summonBtn.style.display = 'none';
 }
 
 initThreeJS();
