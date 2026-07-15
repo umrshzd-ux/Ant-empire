@@ -180,7 +180,8 @@ function updateAlertsPanel() {
   var alerts = [];
   if (state.waveActive) alerts.push({ text: "⚠️ Wave in progress", color: "#ffaa00" });
   else alerts.push({ text: "Wave in " + Math.ceil(state.waveTimer) + "s", color: "#ffaa00" });
-  if (state.eventActive) alerts.push({ text: "🎲 Event active", color: "#4488ff" });
+  if (state.eventActive && !state.eventChoiceActive) alerts.push({ text: "🎲 Event active", color: "#4488ff" });
+  else if (state.eventChoiceActive) alerts.push({ text: "❓ Event choice!", color: "#ff44ff" });
   else if (Math.ceil(state.eventTimer) <= 15) alerts.push({ text: "Event in " + Math.ceil(state.eventTimer) + "s", color: "#4488ff" });
   if (state.bossActive) alerts.push({ text: "💀 Boss fight!", color: "#cc0000" });
   else {
@@ -250,6 +251,8 @@ function refreshHUD() {
   var zoneDisp = document.getElementById('zone-display');
   if (zoneDisp) zoneDisp.textContent = ZONE_CONFIG[state.currentZone] ? ZONE_CONFIG[state.currentZone].label : '🌳Forest';
   if (typeof updateSummonButton === 'function') updateSummonButton();
+  refreshBuildQueueUI();
+  updateReactiveEventUI();
 }
 
 // =============================================
@@ -268,6 +271,105 @@ var btnMore = document.getElementById("btn-more");
 if (btnMore) btnMore.onclick = function() {
   AudioManager.sfx.buttonClick();
   toggleMorePanel();
+};
+
+// =============================================
+//  REACTIVE EVENT UI
+// =============================================
+function showReactiveEventUI(ev) {
+  var container = document.getElementById('reactive-event-panel');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'reactive-event-panel';
+    container.className = 'game-panel open';
+    container.style.position = 'fixed';
+    container.style.top = '30%';
+    container.style.left = '50%';
+    container.style.transform = 'translate(-50%,-50%)';
+    container.style.zIndex = '50';
+    container.style.minWidth = '280px';
+    container.style.textAlign = 'center';
+    document.body.appendChild(container);
+  }
+  var html = '<div class="panel-title">' + ev.emoji + ' ' + ev.name + '</div>';
+  for (var i = 0; i < ev.choices.length; i++) {
+    html += '<button class="menu-btn" style="margin:4px; display:block; width:100%;" onclick="selectReactiveChoice(' + i + ')">' + ev.choices[i].text + '</button>';
+  }
+  container.innerHTML = html;
+  container.style.display = 'flex';
+}
+
+window.selectReactiveChoice = function(idx) {
+  if (state.eventChoices[idx]) {
+    state.eventChoices[idx].action();
+  }
+  state.eventChoiceActive = false;
+  state.eventChoices = [];
+  state.eventActive = false;
+  state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin);
+  var container = document.getElementById('reactive-event-panel');
+  if (container) container.style.display = 'none';
+  refreshHUD();
+};
+
+function updateReactiveEventUI() {
+  var container = document.getElementById('reactive-event-panel');
+  if (container && !state.eventChoiceActive) {
+    container.style.display = 'none';
+  }
+}
+
+// =============================================
+//  BUILD QUEUE UI
+// =============================================
+function refreshBuildQueueUI() {
+  if (!buildPanel) return;
+  var queueEl = buildPanel.querySelector('.build-queue');
+  if (!queueEl) {
+    queueEl = document.createElement('div');
+    queueEl.className = 'build-queue';
+    buildPanel.appendChild(queueEl);
+  }
+  var html = '';
+  if (state.buildQueue.length > 0) {
+    var q = state.buildQueue[0];
+    var progress = 1 - (q.timeRemaining / q.totalTime);
+    html += '<div class="panel-option"><span>🔨 Building ' + q.type + '</span><div class="ach-progress-bar" style="width:100px; margin-left:8px;"><div class="ach-progress-fill" style="width:' + (progress*100) + '%"></div></div></div>';
+  }
+  queueEl.innerHTML = html;
+}
+
+// =============================================
+//  PRESTIGE GOAL SELECTION
+// =============================================
+function showPrestigeGoalSelection() {
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.id = 'prestige-goal-modal';
+  var html = '<div class="modal-card"><div class="modal-title">🎯 Choose Goal</div>';
+  html += '<div style="color:#f3e3c4; font-size:14px; margin-bottom:10px;">Complete for bonus PP</div>';
+  for (var i = 0; i < PRESTIGE_GOALS.length; i++) {
+    var g = PRESTIGE_GOALS[i];
+    html += '<button class="menu-btn" style="margin:4px;" onclick="selectPrestigeGoal(\'' + g.id + '\')">' + g.name + ': ' + g.desc + ' (+' + g.bonusPP + ' PP)</button>';
+  }
+  html += '<button class="modal-btn secondary" onclick="document.getElementById(\'prestige-goal-modal\').style.display=\'none\'">Skip</button></div>';
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+}
+
+window.selectPrestigeGoal = function(id) {
+  var goal = null;
+  for (var i = 0; i < PRESTIGE_GOALS.length; i++) {
+    if (PRESTIGE_GOALS[i].id === id) { goal = PRESTIGE_GOALS[i]; break; }
+  }
+  if (goal) {
+    state.prestigeGoal = goal.id;
+    state.prestigeGoalSelected = true;
+    showToast("🎯 Goal set: " + goal.name);
+  }
+  var modal = document.getElementById('prestige-goal-modal');
+  if (modal) modal.style.display = 'none';
 };
 
 // =============================================
@@ -582,15 +684,35 @@ function checkDailyLogin() {
 }
 function updateStreakDisplay() { var el = document.getElementById('streak-display'); if (el) el.textContent = "🔥" + state.dailyStreak; }
 
-// Prestige modal
+// Prestige modal (modified to include goal selection)
 function showPrestigeModal() {
   closeAllModals();
   if (state.level < BAL.prestigeLevelReq) { showToast("Reach Level " + BAL.prestigeLevelReq + " to prestige!"); return; }
+  if (!state.prestigeGoalSelected) {
+    showPrestigeGoalSelection();
+    return;
+  }
   var ppGain = Math.floor((state.level - BAL.prestigeLevelReq + 1) * BAL.prestigePPPerLevel) + BAL.prestigeBasePP;
+  // Check if goal completed
+  var goalCompleted = false;
+  if (state.prestigeGoal) {
+    for (var i = 0; i < PRESTIGE_GOALS.length; i++) {
+      if (PRESTIGE_GOALS[i].id === state.prestigeGoal && PRESTIGE_GOALS[i].check()) {
+        goalCompleted = true;
+        ppGain += PRESTIGE_GOALS[i].bonusPP;
+        break;
+      }
+    }
+  }
   var modal = document.getElementById('prestige-modal');
   if (!modal) return;
   var infoEl = document.getElementById('prestige-info-text'); if (infoEl) infoEl.textContent = "Reset colony to Level 1 with bonuses.";
-  var rewardEl = document.getElementById('prestige-reward-text'); if (rewardEl) rewardEl.textContent = "✨ You will gain " + ppGain + " Prestige Points!";
+  var rewardEl = document.getElementById('prestige-reward-text');
+  if (rewardEl) {
+    var text = "✨ You will gain " + ppGain + " Prestige Points!";
+    if (goalCompleted) text += " (Goal bonus included!)";
+    rewardEl.textContent = text;
+  }
   modal.style.display = "flex";
   var confirmBtn = document.getElementById('prestige-confirm'); if (confirmBtn) confirmBtn.onclick = function() { performPrestige(ppGain); modal.style.display = "none"; };
   var cancelBtn = document.getElementById('prestige-cancel'); if (cancelBtn) cancelBtn.onclick = function() { modal.style.display = "none"; };
@@ -641,12 +763,15 @@ function performPrestige(ppGain) {
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime;
+  state.prestigeGoal = null;
+  state.prestigeGoalSelected = false;
+  state.buildQueue = [];
   emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 40, 0xff44ff, 0.1, 2.0, 1.0);
   showToast("✨ Prestige complete! Gained " + ppGain + " PP");
   refreshHUD(); checkAchievements(); saveGame();
 }
 
-// Ascension modal
+// Ascension modal (unchanged)
 function showAscendModal() {
   if (state.prestigeCount < BAL.ascendUnlockPrestige) { showToast("Reach Prestige " + BAL.ascendUnlockPrestige + " to unlock Ascension!"); return; }
   if (state.bossActive) { showToast("Defeat the boss first!"); return; }
@@ -693,6 +818,11 @@ function performAscension(apGain) {
   state.lifetimeStats = { totalFood: 0, totalHatched: 0, totalKills: 0, totalBossKills: 0, totalPrestiges: 0, totalPlayTime: 0, totalGems: 0, totalRallies: 0, totalSurges: 0, totalNights: 0, fastestPrestige: 0 };
   state.ascensionCount = ascCount; state.ascensionPoints = ascPoints; state.ascensionUpgrades = ascUpgrades; state.hasAscended = true;
   state.caveBossKills = 0; state.swampBossKills = 0; state.mountainBossKills = 0;
+  state.buildQueue = [];
+  state.prestigeGoal = null;
+  state.prestigeGoalSelected = false;
+  state.eventChoices = [];
+  state.eventChoiceActive = false;
   clearAllMeshes();
   buildQueenChamberWalls(); rebuildAllChambers();
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
@@ -835,55 +965,67 @@ function updateBuildButtonLabels() {
   if (br && !br.disabled) br.textContent = getEffectiveChamberCost(BAL.researchChamberCost) + "🌾";
   if (bsc && !bsc.disabled) bsc.textContent = getEffectiveChamberCost(BAL.scoutChamberCost) + "🌾";
 }
-function buildFoodStorageChamber() {
-  if (state.chambers.foodStorage.count >= BAL.maxStorage) { showToast("Max storage reached!"); return; }
-  var cost = getStorageCost();
+
+// Build queue functions
+function enqueueBuild(type) {
+  var cost, max, curr;
+  switch(type) {
+    case "foodStorage": cost = getStorageCost(); max = BAL.maxStorage; curr = state.chambers.foodStorage.count; break;
+    case "nursery": cost = getEffectiveChamberCost(BAL.nurseryCost); max = BAL.maxNursery; curr = state.chambers.nursery.count; break;
+    case "soldier": cost = getEffectiveChamberCost(BAL.soldierChamberCost); max = BAL.maxSoldierChambers; curr = state.chambers.soldier.count; break;
+    case "research": cost = getEffectiveChamberCost(BAL.researchChamberCost); max = 1; curr = state.chambers.research.count; break;
+    case "scout": cost = getEffectiveChamberCost(BAL.scoutChamberCost); max = BAL.maxScoutChambers; curr = state.chambers.scout.count; break;
+    default: return;
+  }
+  if (curr >= max) { showToast("Max reached!"); return; }
   if (state.food < cost) { showToast("Need " + cost + " food!"); return; }
   state.food -= cost;
-  state.chambers.foodStorage.count++;
-  state.chambers.foodStorage.bonusCap += BAL.foodCapPerStorage;
-  recalculateFoodCap();
+  state.buildQueue.push({ type: type, timeRemaining: BAL.buildTimes[type], totalTime: BAL.buildTimes[type] });
+  updateBuildButtonLabels();
+  refreshBuildQueueUI();
+  refreshHUD();
+}
+
+function buildFoodStorageChamber() {
+  if (state.chambers.foodStorage.count >= BAL.maxStorage) { showToast("Max storage reached!"); return; }
   var chX = getNextStorageX();
   storageChambers.push(makeChamber(chX, CCY, CZ, 3, 2, 4, 0x5a4020));
   makeLabel("🌾 Storage", chX, CCY + 1.4, CZ, 256, 64, true);
   var pile = new THREE.Group(); pile.position.set(chX, CCY - 0.8, CZ); scene.add(pile); storagePiles.push(pile);
+  state.chambers.foodStorage.count++;
+  state.chambers.foodStorage.bonusCap += BAL.foodCapPerStorage;
+  recalculateFoodCap();
   AudioManager.sfx.buttonClick(); updateDailyProgress('build1', 1);
   showToast("Food Storage built! +" + BAL.foodCapPerStorage);
   refreshHUD(); updateBuildButtons(); checkAchievements(); checkTutorials();
 }
 function buildNurseryChamber() {
   if (state.chambers.nursery.count >= BAL.maxNursery) { showToast("Max nurseries!"); return; }
-  var cost = getEffectiveChamberCost(BAL.nurseryCost);
-  if (state.food < cost) { showToast("Need " + cost + " food!"); return; }
-  state.food -= cost; state.chambers.nursery.count++; state.chambers.nursery.hatchReduction += 2; recalculateHatchTime();
-  var chX = TX - 5 - (state.chambers.nursery.count - 1) * 3.5;
+  var chX = TX - 5 - state.chambers.nursery.count * 3.5;
   nurseryChambers.push(makeChamber(chX, CCY, CZ, 3, 2, 4, 0x6b5040));
   makeLabel("🥚 Nursery", chX, CCY + 1.4, CZ, 256, 64, true);
   var cluster = new THREE.Group(); cluster.position.set(chX, CCFY + 0.05, CZ); scene.add(cluster); nurseryEggClusters.push(cluster);
+  state.chambers.nursery.count++; state.chambers.nursery.hatchReduction += 2; recalculateHatchTime();
   buildQueenChamberWalls();
   AudioManager.sfx.buttonClick(); updateDailyProgress('build1', 1);
   showToast("Nursery built! Hatch -2s"); refreshHUD(); updateBuildButtons(); checkAchievements();
 }
 function buildSoldierChamber() {
   if (state.chambers.soldier.count >= BAL.maxSoldierChambers) { showToast("Max soldier chambers!"); return; }
-  var cost = getEffectiveChamberCost(BAL.soldierChamberCost);
-  if (state.food < cost) { showToast("Need " + cost + " food!"); return; }
-  state.food -= cost; state.chambers.soldier.count++;
   var chX = getNextSoldierX();
   soldierChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x4a2a1a) });
   makeLabel("🛡️ Barracks", chX, CCY + 1.4, CZ, 256, 64, true);
+  state.chambers.soldier.count++;
   state.soldierCount++; spawnSoldier(chX);
   AudioManager.sfx.buttonClick(); updateDailyProgress('build1', 1);
   showToast("Soldier +1"); refreshHUD(); updateBuildButtons(); checkAchievements();
 }
 function buildResearchChamber() {
   if (state.chambers.research.count >= 1) { showToast("Only one research chamber!"); return; }
-  var cost = getEffectiveChamberCost(BAL.researchChamberCost);
-  if (state.food < cost) { showToast("Need " + cost + " food!"); return; }
-  state.food -= cost; state.chambers.research.count++;
   var chX = getNextResearchX();
   researchChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x3a3a5a) });
   makeLabel("🔬 Research", chX, CCY + 1.4, CZ, 256, 64, true);
+  state.chambers.research.count++;
   researchChamberGroup = new THREE.Group(); researchChamberGroup.position.set(chX, CCY + 1.8, CZ);
   var orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 });
   for (var i = 0; i < 5; i++) { var orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), orbMat); var angle = (i / 5) * Math.PI * 2; orb.position.set(Math.cos(angle) * 0.6, 0, Math.sin(angle) * 0.6); researchChamberGroup.add(orb); }
@@ -896,12 +1038,10 @@ function buildResearchChamber() {
 }
 function buildScoutChamber() {
   if (state.chambers.scout.count >= BAL.maxScoutChambers) { showToast("Max scout chambers!"); return; }
-  var cost = getEffectiveChamberCost(BAL.scoutChamberCost);
-  if (state.food < cost) { showToast("Need " + cost + " food!"); return; }
-  state.food -= cost; state.chambers.scout.count++;
   var chX = getNextScoutX();
   scoutChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x3a5a3a) });
   makeLabel("🔍 Scout Post", chX, CCY + 1.4, CZ, 256, 64, true);
+  state.chambers.scout.count++;
   state.scoutCount++; spawnScout();
   AudioManager.sfx.buttonClick(); updateDailyProgress('build1', 1);
   showToast("Scout +1"); refreshHUD(); updateBuildButtons(); checkAchievements();
@@ -954,7 +1094,7 @@ function setupButtons() {
   var btnBuild = document.getElementById("btn-build");
   if (btnBuild) btnBuild.onclick = function() {
     AudioManager.sfx.buttonClick();
-    if (buildPanel.classList.contains("open")) { buildPanel.classList.remove("open"); } else { closeAllPanels(); buildPanel.classList.add("open"); updateBuildButtonLabels(); }
+    if (buildPanel.classList.contains("open")) { buildPanel.classList.remove("open"); } else { closeAllPanels(); buildPanel.classList.add("open"); updateBuildButtonLabels(); refreshBuildQueueUI(); }
   };
   // Upgrade
   var btnUpgrades = document.getElementById("btn-upgrades");
@@ -1023,17 +1163,17 @@ function setupButtons() {
   var btnMenu = document.getElementById("btn-menu-ingame");
   if (btnMenu) btnMenu.onclick = function() { AudioManager.sfx.buttonClick(); showMainMenu(); };
 
-  // Build chamber buttons (safe)
+  // Build chamber buttons (changed to enqueue)
   var bfs = document.getElementById("build-food-storage");
-  if (bfs) bfs.onclick = buildFoodStorageChamber;
+  if (bfs) bfs.onclick = function() { enqueueBuild("foodStorage"); };
   var bn = document.getElementById("build-nursery");
-  if (bn) bn.onclick = buildNurseryChamber;
+  if (bn) bn.onclick = function() { enqueueBuild("nursery"); };
   var bs = document.getElementById("build-soldier");
-  if (bs) bs.onclick = buildSoldierChamber;
+  if (bs) bs.onclick = function() { enqueueBuild("soldier"); };
   var br = document.getElementById("build-research");
-  if (br) br.onclick = buildResearchChamber;
+  if (br) br.onclick = function() { enqueueBuild("research"); };
   var bsc = document.getElementById("build-scout");
-  if (bsc) bsc.onclick = buildScoutChamber;
+  if (bsc) bsc.onclick = function() { enqueueBuild("scout"); };
 
   // Upgrade buy buttons
   var btnUpgDmg = document.getElementById("btn-upg-damage");
@@ -1115,4 +1255,4 @@ function setupButtons() {
     }
   }
   refreshUpgradeUI(); refreshAscensionShopUI();
-  }
+}
