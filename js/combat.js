@@ -3,6 +3,7 @@
 function combatUpdate(dt) {
   var cdt = Math.min(dt, 0.2);
   var guardRadius = getEffectiveGuardRadius();
+  var defenseActive = state.defenseBannerTimer > 0;
 
   // Soldier attacks vs spiders
   for (var i = soldiers.length - 1; i >= 0; i--) {
@@ -54,6 +55,7 @@ function combatUpdate(dt) {
     }
     if (ts) {
       var dmg = BAL.spiderDamage;
+      if (defenseActive) dmg *= 0.5;
       ts.health -= dmg;
       spawnDamageNumber(dmg, ts.mesh.position, "#ffaa00");
       sp.attackCooldown = BAL.spiderAttackCD;
@@ -93,6 +95,7 @@ function spawnBoss() {
       var bossHealth = Math.floor(BAL[bt.hpKey] * hpMult * cfg.enemyMult);
       state.bossMaxHealth = bossHealth;
       state.bossHealth = bossHealth;
+      state._bossRetreatTimer = 0;  // tracks time spent at nest without soldiers
 
       var bossMesh = new THREE.Group();
       var bodyMat = new THREE.MeshStandardMaterial({ color: bt.color, roughness: 0.2, metalness: 0.4 });
@@ -164,7 +167,6 @@ function spawnBoss() {
       showToast("❌ Boss spawn failed. Please try again.");
     }
     _bossSpawning = false;
-    // Do NOT re-enable summon button here – updateSummonButton() handles visibility.
   }, 10);
 }
 
@@ -174,12 +176,41 @@ function updateBoss(dt) {
   var bt = BOSS_TYPES[boss.bossKey];
   if (!bt) {
     console.error("Unknown boss type:", boss.bossKey);
-    killBoss();   // remove the broken boss safely
+    killBoss();
     return;
   }
   state.bossHealth = boss.health;
   var hbFill = document.getElementById('boss-health-fill');
   if (hbFill) hbFill.style.width = Math.max(0, (boss.health / boss.maxHealth) * 100) + "%";
+
+  // Boss retreat logic: if no soldiers, track time at nest and retreat after stealing
+  if (soldiers.length === 0) {
+    var dtn = boss.mesh.position.distanceTo(ER);
+    if (dtn < 1.5) {
+      state._bossRetreatTimer = (state._bossRetreatTimer || 0) + dt;
+      // Steal food every 2 seconds
+      if (!state._lastBossStealTime) state._lastBossStealTime = 0;
+      state._lastBossStealTime += dt;
+      if (state._lastBossStealTime >= 2) {
+        state._lastBossStealTime = 0;
+        var stolen = Math.min(state.food, 15 + Math.floor(Math.random() * 20));
+        if (stolen > 0) {
+          state.food = Math.max(0, state.food - stolen);
+          showToast("💀 Boss stole " + stolen + " food!");
+          spawnFloater("-" + stolen + " 🌾", window.innerWidth / 2, window.innerHeight / 2, "#ff6666");
+        }
+      }
+      // After 30 seconds at nest with no soldiers, retreat
+      if (state._bossRetreatTimer > 30) {
+        killBoss();
+        showToast("💀 Boss left the colony!");
+        return;
+      }
+    } else {
+      state._bossRetreatTimer = Math.max(0, (state._bossRetreatTimer || 0) - dt); // decay timer if boss moves away
+    }
+  }
+
   var p = boss.mesh.position;
   var dx = boss.target.x - p.x, dy = boss.target.y - p.y, dz = boss.target.z - p.z;
   var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -202,7 +233,6 @@ function updateBoss(dt) {
         boss.lastAttack = now;
         updateHealthBar(soldiers[i].healthBar, soldiers[i].health / soldiers[i].maxHealth);
         if (boss.special === "poison") {
-          // Capture the soldier in a closure to avoid stale reference
           (function(soldier) {
             soldier.damageMultiplier = 0.7;
             setTimeout(function() { if (soldier) soldier.damageMultiplier = 1; }, 5000);
@@ -282,4 +312,4 @@ function summonBoss() {
   if (summonBtn) summonBtn.disabled = true;
   spawnBoss();
   showToast("💀 Boss summoned!");
-                                  }
+    }
