@@ -19,11 +19,6 @@ function deactivateRally() {
   applyAllWorkerSpeeds();
 }
 
-// Rally button listener is now in ui.js
-// Surge button listener is now in ui.js
-// Event button listener is now in ui.js
-// Summon button listener is now in ui.js
-
 function updateSummonButton() {
   if (!summonBtn) return;
   if (state.bossActive) {
@@ -104,4 +99,4 @@ function applyWeatherEffects(type, active) {
       updateDailyProgress('night1', 1);
     }
   }
-  }
+}
