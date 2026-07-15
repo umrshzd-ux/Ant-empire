@@ -1,6 +1,5 @@
 // ===== ANT MODEL, WORKERS, SOLDIERS, SCOUTS, QUEEN, EGGS =====
 
-// Ant model builder
 function buildAntMesh(scale, bodyColor, headScale, goldenColor, mandibleOverride, rareColor) {
   var g = new THREE.Group();
   var bh = 0.22;
@@ -49,7 +48,6 @@ function buildAntMesh(scale, bodyColor, headScale, goldenColor, mandibleOverride
   return g;
 }
 
-// Label helpers
 function createLabelSprite(text) {
   var c = document.createElement("canvas");
   c.width = 128; c.height = 32;
@@ -84,7 +82,6 @@ function addLabel(parent, text, yOff) {
   return l;
 }
 
-// Queen
 var qMesh;
 function initQueen() {
   qMesh = buildAntMesh(queenScale, 0x8a4a1a);
@@ -95,7 +92,6 @@ function initQueen() {
 }
 initQueen();
 
-// Queen click (raycaster)
 renderer.domElement.addEventListener('click', function(e) {
   if (!qMesh) return;
   var mouse = new THREE.Vector2();
@@ -111,7 +107,6 @@ renderer.domElement.addEventListener('click', function(e) {
   }
 });
 
-// Workers
 var workers = [];
 var nWI = 0;
 function getWorkerVisualScale() { return BAL.workerBaseScale + state.upgrades.workerSpeed * BAL.workerScalePerUpgrade; }
@@ -231,15 +226,20 @@ function updateWorker(w, dt) {
     w.mesh.userData.idleTime += dt;
     w.mesh.userData.headMesh.rotation.z = Math.sin(w.mesh.userData.idleTime * 3) * 0.1;
   }
-  if (isEnemyNearby(w, BAL.workerFleeRange)) {
+  // Flee from nearby enemies (spiders) AND boss
+  if (isEnemyNearby(w, BAL.workerFleeRange) || isBossNearby(w, BAL.workerFleeRange * 2)) {
     w.avoidTimer = 0.5;
-    var nearest = null, nd = 999;
+    var nearestPos = null, nd = 999;
     for (var i = 0; i < enemies.length; i++) {
       var d = w.mesh.position.distanceTo(enemies[i].mesh.position);
-      if (d < nd) { nd = d; nearest = enemies[i]; }
+      if (d < nd) { nd = d; nearestPos = enemies[i].mesh.position; }
     }
-    if (nearest) {
-      var dx = w.mesh.position.x - nearest.mesh.position.x, dz = w.mesh.position.z - nearest.mesh.position.z, a = Math.atan2(dx, dz);
+    if (state.bossActive && state.currentBoss && state.currentBoss.mesh) {
+      var bd = w.mesh.position.distanceTo(state.currentBoss.mesh.position);
+      if (bd < nd) { nd = bd; nearestPos = state.currentBoss.mesh.position; }
+    }
+    if (nearestPos) {
+      var dx = w.mesh.position.x - nearestPos.x, dz = w.mesh.position.z - nearestPos.z, a = Math.atan2(dx, dz);
       w.mesh.position.x += Math.sin(a) * 0.03;
       w.mesh.position.z += Math.cos(a) * 0.03;
     }
@@ -387,7 +387,6 @@ function avoidSoldiers(w) {
   return false;
 }
 
-// Soldiers
 var soldiers = [];
 function createHealthBar(parent, w, h, yOff) {
   var c = document.createElement("canvas");
@@ -482,9 +481,7 @@ function updateSoldier(s, dt) {
     var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     if (dist > 1.2) {
       var step = Math.min(s.speed * 1.2 * dt, dist);
-      p.x += (dx / dist) * step;
-      p.y += (dy / dist) * step;
-      p.z += (dz / dist) * step;
+      p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step;
       s.mesh.rotation.y = Math.atan2(dx, dz);
     }
     return;
@@ -495,9 +492,7 @@ function updateSoldier(s, dt) {
     var bdist = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz);
     if (bdist < 6.0) {
       var bstep = Math.min(s.speed * 1.2 * dt, bdist);
-      bp.x += (bdx / bdist) * bstep;
-      bp.y += (bdy / bdist) * bstep;
-      bp.z += (bdz / bdist) * bstep;
+      bp.x += (bdx / bdist) * bstep; bp.y += (bdy / bdist) * bstep; bp.z += (bdz / bdist) * bstep;
       s.mesh.rotation.y = Math.atan2(bdx, bdz);
       return;
     }
@@ -517,13 +512,10 @@ function updateSoldier(s, dt) {
   while (ad < -Math.PI) ad += Math.PI * 2;
   s.mesh.rotation.y += ad * Math.min(1, dt * 3);
   var step = Math.min(s.speed * dt, dist);
-  p.x += (dx / dist) * step;
-  p.y += (dy / dist) * step;
-  p.z += (dz / dist) * step;
+  p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step;
   s.mesh.position.y += Math.sin(performance.now() / 150 + p.x * 3) * 0.004;
 }
 
-// Scouts
 var scouts = [];
 var SCOUT_SCALE = 1.4;
 function spawnScout() {
@@ -560,9 +552,7 @@ function updateScout(s, dt) {
       return;
     }
     var step = Math.min(scoutSpeed * dt, dist);
-    p.x += (dx / dist) * step;
-    p.y += (dy / dist) * step;
-    p.z += (dz / dist) * step;
+    p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step;
     s.mesh.rotation.y = Math.atan2(dx, dz);
     s.mesh.position.y += Math.sin(performance.now() / 100 + p.x * 3) * 0.005;
   } else if (s.state === "RETURNING") {
@@ -587,15 +577,12 @@ function updateScout(s, dt) {
       return;
     }
     var step = Math.min(scoutSpeed * dt, dist);
-    p.x += (dx / dist) * step;
-    p.y += (dy / dist) * step;
-    p.z += (dz / dist) * step;
+    p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step;
     s.mesh.rotation.y = Math.atan2(dx, dz);
     s.mesh.position.y += Math.sin(performance.now() / 100 + p.x * 3) * 0.005;
   }
 }
 
-// Eggs (place in scene, hatch logic)
 var eggMs = [], hatchFx = [];
 function pTH() {
   var b = document.getElementById("btn-tunnel");
@@ -677,4 +664,11 @@ function hatchEgg(egg, i) {
   if (rt) showToast(rt.emoji + " Rare " + rt.name + " hatched!");
   checkAchievements();
   pTH();
-    }
+}
+
+// Boss detection for workers
+function isBossNearby(w, range) {
+  if (!state.bossActive || !state.currentBoss || !state.currentBoss.mesh) return false;
+  if (!w.mesh) return false;
+  return w.mesh.position.distanceTo(state.currentBoss.mesh.position) < range;
+          }
