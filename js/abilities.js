@@ -20,7 +20,6 @@ function deactivateRally() {
 }
 
 // Rally button listener is now in ui.js
-
 // Surge button listener is now in ui.js
 // Event button listener is now in ui.js
 // Summon button listener is now in ui.js
@@ -55,8 +54,9 @@ function endWave() {
 }
 
 function triggerRandomEvent() {
-  state.eventActive = true;
+  // Classic event (fallback when no reactive event)
   var ev = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+  state.eventActive = true;
   if (eventBtn) {
     eventBtn.textContent = ev.emoji + " " + ev.name + "!";
     eventBtn.style.display = "block";
@@ -104,4 +104,4 @@ function applyWeatherEffects(type, active) {
       updateDailyProgress('night1', 1);
     }
   }
-        }
+  }
