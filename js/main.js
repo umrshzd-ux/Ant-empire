@@ -78,7 +78,7 @@ function hideMainMenu() {
   gamePaused = false;
 }
 
-// ----- Save slot rendering (three separate buttons) -----
+// ----- Save slot rendering (three separate buttons, fixed sizing) -----
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -91,10 +91,10 @@ function renderSlots() {
       else if (diff > 60000) timeAgo = Math.floor(diff / 60000) + 'm ago';
       html += '<div class="slot-name">🐜 ' + sl.name + '</div>' +
               '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
-              '<div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">' +
-                '<button class="menu-btn play-colony-btn" onclick="playColony(' + i + '); event.stopPropagation();">▶️ Play</button>' +
-                '<button class="menu-btn rename-colony-btn" onclick="renameColony(' + i + '); event.stopPropagation();">✏️ Rename</button>' +
-                '<button class="menu-btn delete-colony-btn" onclick="deleteColony(' + i + '); event.stopPropagation();">🗑️ Delete</button>' +
+              '<div style="display:flex; gap:6px; margin-top:10px; justify-content:center;">' +
+                '<button class="slot-action-btn play-colony-btn" onclick="playColony(' + i + '); event.stopPropagation();">▶️ Play</button>' +
+                '<button class="slot-action-btn rename-colony-btn" onclick="renameColony(' + i + '); event.stopPropagation();">✏️ Rename</button>' +
+                '<button class="slot-action-btn delete-colony-btn" onclick="deleteColony(' + i + '); event.stopPropagation();">🗑️ Delete</button>' +
               '</div>';
     } else {
       html += '<div class="slot-empty" onclick="newColony(' + i + ')">+ New Colony</div>';
@@ -114,6 +114,7 @@ window.playColony = function(slot) {
 };
 
 window.newColony = function(slot) {
+  // Force a fresh start
   loadSlot(slot);
 };
 
@@ -121,10 +122,13 @@ window.renameColony = function(slot) {
   var modal = document.getElementById('rename-modal');
   if (!modal) return;
   var input = document.getElementById('rename-input');
+  if (!input) return;
   var data = SaveManager.loadGame(slot);
   if (!data) return;
   input.value = data.colonyName || ('Colony ' + (slot + 1));
   modal.style.display = 'flex';
+  // Auto-focus the input so the keyboard appears immediately on mobile
+  setTimeout(function() { input.focus(); }, 100);
   document.getElementById('rename-confirm').onclick = function() {
     var newName = input.value.trim();
     if (newName) {
