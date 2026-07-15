@@ -371,6 +371,7 @@ canvas { display: block; }
   content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
   background: radial-gradient(circle, rgba(255,200,100,0.3) 0%, transparent 60%);
   opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;   /* ← THIS IS THE FIX */
 }
 .save-slot:hover::before { opacity: 1; }
 .save-slot:hover {
@@ -984,4 +985,4 @@ canvas { display: block; }
   })();
 </script>
 </body>
-                                                                                     </html>
+       </html>
