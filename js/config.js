@@ -1,4 +1,4 @@
-// ===== CONFIGURATION & BALANCE CONSTANTS (REVISED ECONOMY) =====
+// ===== CONFIGURATION & BALANCE CONSTANTS (ENGAGEMENT UPDATE) =====
 
 var BAL = {
   baseEggLayTime: 10, eggLayTimePerWorker: 2.5, baseHatchTime: 10, foodPerTrip: 3, foodPerTripDiminished: 1, baseFoodCap: 60,
@@ -26,7 +26,21 @@ var BAL = {
   ascensionMultiplierHatch: 0.95,
   bossHealthCentipede: 300, bossDamageCentipede: 18, bossSpeedCentipede: 0.25,
   bossHealthHydra: 350, bossDamageHydra: 14, bossSpeedHydra: 0.15,
-  bossHealthWyrm: 400, bossDamageWyrm: 22, bossSpeedWyrm: 0.3
+  bossHealthWyrm: 400, bossDamageWyrm: 22, bossSpeedWyrm: 0.3,
+
+  // Build Queue times (seconds per chamber)
+  buildTimes: {
+    foodStorage: 5,
+    nursery: 8,
+    soldier: 7,
+    research: 10,
+    scout: 6
+  },
+  // Food tension thresholds
+  foodLowThreshold: 0.2,
+  foodHighThreshold: 0.8,
+  foodTensionMaxSlowdown: 0.5, // at 0 food, worker speed * 0.5
+  foodTensionHatchBoost: 0.2   // at high food, hatch time reduced by 20%
 };
 
 var UPGRADES = {
@@ -36,9 +50,7 @@ var UPGRADES = {
   foodCap: { name: "Storage Expansion", baseCost: 90, maxLevel: 10, effect: 40, costMult: 1.6 }
 };
 
-// ===== GEM SHOP – REDESIGNED =====
 var GEM_ITEMS = {
-  // --- Permanent Upgrades (survive prestige) ---
   goldenEgg:    { name: "Golden Egg",       desc: "+1 golden worker",                     cost: 50, category: "permanent", oneTime: true },
   soldierArmor: { name: "Soldier Armor",    desc: "+30 HP to all soldiers",               cost: 40, category: "permanent", oneTime: true },
   queenBless:   { name: "Queen's Blessing", desc: "-5s egg lay time",                     cost: 35, category: "permanent", oneTime: true },
@@ -49,8 +61,6 @@ var GEM_ITEMS = {
   gemMagnet:    { name: "Gem Magnet",       desc: "+15% scout gem chance",                cost: 60, category: "permanent", oneTime: true },
   rapidHatch:   { name: "Rapid Hatch",      desc: "-4s base hatch time",                  cost: 50, category: "permanent", oneTime: true },
   luckyAnt:     { name: "Lucky Ant",        desc: "+10% rare ant chance",                 cost: 40, category: "permanent", oneTime: true },
-
-  // --- Skins & Vanity (survive prestige) ---
   shadowSkin:       { name: "Shadow Skin",       desc: "Workers dark grey",               cost: 60,  category: "skin", oneTime: true },
   fireSkin:         { name: "Fire Skin",         desc: "Workers orange/red",              cost: 60,  category: "skin", oneTime: true },
   iceSkin:          { name: "Ice Skin",          desc: "Workers blue/white",              cost: 60,  category: "skin", oneTime: true },
@@ -59,8 +69,6 @@ var GEM_ITEMS = {
   crystalEntrance:  { name: "Crystal Entrance",  desc: "Nest rim becomes crystal",        cost: 120, category: "skin", oneTime: true },
   royalCarpet:      { name: "Royal Carpet",      desc: "Trail leading to nest",           cost: 100, category: "skin", oneTime: true },
   goldenSparkles:   { name: "Golden Sparkles",   desc: "Workers leave golden sparkles",   cost: 150, category: "skin", oneTime: true },
-
-  // --- Consumable Boosts (repeatable) ---
   speedBoost:    { name: "Speed Boost",    desc: "2× worker speed (5 min)",              cost: 15, category: "consumable", oneTime: false },
   instantHatch:  { name: "Insta-Hatch",    desc: "Hatch all eggs instantly",             cost: 10, category: "consumable", oneTime: false },
   foodCrate:     { name: "Food Crate",     desc: "Instantly gain 500 food",              cost: 8,  category: "consumable", oneTime: false },
@@ -312,4 +320,29 @@ var RARE_TYPES = [
   { color: 0xff66aa, name: "Pink Worker", emoji: "💗", speedBonus: 0.3, foodBonus: 1 },
   { color: 0x66ff66, name: "Green Worker", emoji: "💚", speedBonus: 0, foodBonus: 2 },
   { color: 0x6666ff, name: "Blue Worker", emoji: "💙", speedBonus: 0.5, foodBonus: 0 }
+];
+
+var PRESTIGE_GOALS = [
+  { id: "pacifistGoal", name: "Pacifist", desc: "Reach Lv30 without Soldier Chamber", bonusPP: 5, check: function() { return state.level >= 30 && state.chambers.soldier.count === 0; } },
+  { id: "speedGoal", name: "Speed Run", desc: "Reach Lv30 in 15 min", bonusPP: 8, check: function() { return state.level >= 30 && (state.lifetimeStats.totalPlayTime - (state.prestigeStartTime || 0)) < 900; } },
+  { id: "scoutGoal", name: "Explorer", desc: "Unlock 2 zones", bonusPP: 3, check: function() { return state.unlockedZonesList.length >= 3; } },
+  { id: "hatchGoal", name: "Hatchery", desc: "Hatch 20 workers", bonusPP: 4, check: function() { return state.totalHatched >= 20; } }
+];
+
+var REACTIVE_EVENTS = [
+  { name: "Food Surplus", emoji: "🍞", condition: function() { return state.food > state.foodCap * 0.7 && state.virtualWorkers > 0; },
+    choices: [
+      { text: "Convert to Gems (+3💎)", action: function() { addGems(3); } },
+      { text: "Boost Workers (2x speed 30s)", action: function() { state.speedBoostTimer = 30; applyAllWorkerSpeeds(); } }
+    ] },
+  { name: "Hunger Crisis", emoji: "🍂", condition: function() { return state.food < state.foodCap * 0.2; },
+    choices: [
+      { text: "Ration Supply (+200 food)", action: function() { addFood(200); } },
+      { text: "Tough it out (+5 soldier dmg 30s)", action: function() { state.defenseBannerTimer = 30; } }
+    ] },
+  { name: "Spider Migration", emoji: "🕷️", condition: function() { return soldiers.length >= 2; },
+    choices: [
+      { text: "Ambush (+8 soldier dmg permanently)", action: function() { state.gemUpgrades.antStrength = (state.gemUpgrades.antStrength || 0) + 8; } },
+      { text: "Fortify (+100 food)", action: function() { addFood(100); } }
+    ] }
 ];
