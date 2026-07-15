@@ -21,8 +21,11 @@ function deactivateRally() {
 
 function updateSummonButton() {
   if (!summonBtn) return;
+  // Disable if boss active, not enough gems, or no soldier chamber built
   if (state.bossActive) {
     summonBtn.style.display = "none";
+  } else if (state.chambers.soldier.count === 0) {
+    summonBtn.style.display = "none"; // can't fight without soldiers
   } else {
     summonBtn.style.display = state.gems >= BAL.summonCost ? "block" : "none";
   }
@@ -99,4 +102,4 @@ function applyWeatherEffects(type, active) {
       updateDailyProgress('night1', 1);
     }
   }
-}
+        }
