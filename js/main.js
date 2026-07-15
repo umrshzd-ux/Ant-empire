@@ -3,7 +3,7 @@
 var container, scene, camera, renderer, hLight, sLight, fLight, raycaster;
 var gameLoopActive = false;
 var gameSystemsReady = false;
-var gamePaused = false; // NEW: pause flag for resume
+var gamePaused = false;
 
 function initThreeJS() {
   container = document.getElementById("canvas-container");
@@ -38,10 +38,8 @@ function initThreeJS() {
 
 // ----- Main menu functions -----
 function showMainMenu() {
-  // Instead of stopping the loop, just pause it
   gamePaused = true;
   if (gameLoopActive) {
-    // Save game state
     state.lastSaveTime = Date.now();
     saveGame();
   }
@@ -51,7 +49,6 @@ function showMainMenu() {
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('canvas-container').style.display = 'none';
 
-  // Force hide boss-related UI
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
@@ -74,22 +71,19 @@ function hideMainMenu() {
   document.getElementById('bottom-bar').style.display = 'flex';
   document.getElementById('canvas-container').style.display = 'block';
 
-  // Boss UI will be managed by the game loop, start hidden
   var bossName = document.getElementById('boss-name');
   if (bossName) bossName.style.display = 'none';
   var bossBar = document.getElementById('boss-health-bar');
   if (bossBar) bossBar.style.display = 'none';
-
-  // Unpause the game
   gamePaused = false;
 }
 
-// ----- Save slot rendering (direct event listeners) -----
+// ----- Save slot rendering (inline onclick for reliability) -----
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
     var sl = slots[i];
-    html += '<div class="save-slot" data-slot="' + i + '">';
+    html += '<div class="save-slot" onclick="handleSlotClick(' + i + ')">';
     if (sl.hasData) {
       var d = new Date(sl.lastSaved), timeAgo = 'just now', diff = Date.now() - sl.lastSaved;
       if (diff > 86400000) timeAgo = Math.floor(diff / 86400000) + 'd ago';
@@ -101,8 +95,8 @@ function renderSlots() {
                 '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
               '</div>' +
               '<div style="display:flex; gap:4px;">' +
-                '<button class="rename-colony-btn" data-slot="' + i + '" title="Rename colony">✏️</button>' +
-                '<button class="delete-colony-btn" data-slot="' + i + '" title="Delete colony">🗑️</button>' +
+                '<button class="rename-colony-btn" onclick="event.stopPropagation(); renameColony(' + i + ')">✏️</button>' +
+                '<button class="delete-colony-btn" onclick="event.stopPropagation(); showDeleteModal(' + i + ')">🗑️</button>' +
               '</div>' +
             '</div>';
     } else {
@@ -111,56 +105,19 @@ function renderSlots() {
     html += '</div>';
   }
   document.getElementById('save-slots').innerHTML = html;
-
-  // Attach direct event listeners
-  var saveSlotDivs = document.querySelectorAll('#save-slots .save-slot');
-  for (var j = 0; j < saveSlotDivs.length; j++) {
-    var slotDiv = saveSlotDivs[j];
-    var slotIndex = parseInt(slotDiv.getAttribute('data-slot'));
-
-    // Click on the whole card (load/resume colony)
-    slotDiv.addEventListener('click', function(slot) {
-      return function(e) {
-        // If the click came from the delete or rename button, ignore
-        if (e.target.closest('.delete-colony-btn') || e.target.closest('.rename-colony-btn')) {
-          return;
-        }
-        // Resume same colony if already active, otherwise load it
-        if (slot === currentSlot && gameSystemsReady && gamePaused) {
-          // Resume without rebuilding
-          hideMainMenu();
-        } else {
-          loadSlot(slot);
-        }
-      };
-    }(slotIndex));
-
-    // Delete button
-    var delBtn = slotDiv.querySelector('.delete-colony-btn');
-    if (delBtn) {
-      delBtn.addEventListener('click', function(slot) {
-        return function(e) {
-          e.stopPropagation();
-          showDeleteModal(slot);
-        };
-      }(slotIndex));
-    }
-
-    // Rename button
-    var renBtn = slotDiv.querySelector('.rename-colony-btn');
-    if (renBtn) {
-      renBtn.addEventListener('click', function(slot) {
-        return function(e) {
-          e.stopPropagation();
-          renameColony(slot);
-        };
-      }(slotIndex));
-    }
-  }
 }
 
-// Colony rename
-function renameColony(slot) {
+// Global function to handle slot click
+window.handleSlotClick = function(slot) {
+  if (slot === currentSlot && gameSystemsReady && gamePaused) {
+    hideMainMenu();
+  } else {
+    loadSlot(slot);
+  }
+};
+
+// Global rename function
+window.renameColony = function(slot) {
   var data = SaveManager.loadGame(slot);
   if (!data) return;
   var newName = prompt('Enter new colony name:', data.colonyName || ('Colony ' + (slot + 1)));
@@ -172,9 +129,9 @@ function renameColony(slot) {
     }
     renderSlots();
   }
-}
+};
 
-// Delete modal functions (global)
+// Global delete modal
 window.showDeleteModal = function(slot) {
   var modal = document.getElementById('delete-modal');
   if (!modal) return;
@@ -195,7 +152,7 @@ function performDelete(slot) {
   SaveManager.deleteSlot(slot);
   if (currentSlot === slot) {
     currentSlot = -1;
-    gamePaused = false; // ensure paused flag cleared
+    gamePaused = false;
     showMainMenu();
   } else {
     renderSlots();
@@ -203,13 +160,11 @@ function performDelete(slot) {
 }
 
 window.loadSlot = function(slot) {
-  // If the same colony is already active and we're just resuming, do nothing extra
   if (slot === currentSlot && gameSystemsReady && gamePaused) {
     hideMainMenu();
     return;
   }
 
-  // For a different colony, stop the current loop and rebuild
   if (gameLoopActive) {
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
     gameLoopActive = false;
@@ -389,10 +344,7 @@ function startGameLoop() {
     if (!gameLoopActive) { animFrameId = null; return; }
     animFrameId = requestAnimationFrame(animate);
 
-    // If paused, skip all updates and rendering
-    if (gamePaused) {
-      return; // still requests next frame, so loop keeps running at idle cost
-    }
+    if (gamePaused) return;
 
     try {
       var now = performance.now();
@@ -407,7 +359,6 @@ function startGameLoop() {
       if (state.luckyHourTimer > 0) { state.luckyHourTimer -= dt; }
       if (state.defenseBannerTimer > 0) { state.defenseBannerTimer -= dt; }
 
-      // Virtual worker food (accumulate and add once per second)
       if (state.virtualWorkers > 0) {
         vwFoodAccum += state.virtualWorkers * BAL.virtualFoodPerSecond * dt;
         if (vwFoodAccum >= 1) {
@@ -419,7 +370,6 @@ function startGameLoop() {
 
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
-      // Rain update only when raining
       if (state.weatherActive && state.weatherType === "rain") {
         if (!window._lastRainUpdate) window._lastRainUpdate = 0;
         window._lastRainUpdate += dt;
@@ -449,7 +399,6 @@ function startGameLoop() {
       else { state.eventTimer -= dt; if (state.eventTimer <= -15) { state.eventActive = false; eventBtn.style.display = "none"; state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin); } }
       updateEventTimer();
 
-      // Boss logic with timer reset after spawn attempt
       if (!state.bossActive) {
         state.bossTimer -= dt;
         if (state.bossTimer <= 0) {
@@ -477,8 +426,9 @@ function startGameLoop() {
         state.weatherTimeLeft -= dt;
         if (state.weatherType === "night") {
           var gi = Math.min(1, 1 - (state.weatherTimeLeft / BAL.weatherDuration));
-          for (var mi = 0; mi < mushroomMeshes.length; mi++) mushroomMeshes[mi].userData.capMat.emissiveIntensity = gi * 0.8;
-          for (var mi = 0; mi < mushroomLights.length; mi++) mushroomLights[mi].intensity = gi * 0.6;
+          for (var mi = 0; mi < mushroomMeshes.length; mi++) {
+            if (mushroomMeshes[mi].userData.capMat) mushroomMeshes[mi].userData.capMat.emissiveIntensity = gi * 0.8;
+          }
         }
         if (state.weatherTimeLeft <= 0) {
           applyWeatherEffects(state.weatherType, false);
@@ -500,7 +450,6 @@ function startGameLoop() {
 
       if (state.deadSoldiers > 0) { state.soldierRespawnTimer -= dt; if (state.soldierRespawnTimer <= 0) respawnSoldier(); }
 
-      // Enemies
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
         if (sp.stealing && sp.fleeTarget) {
@@ -518,7 +467,6 @@ function startGameLoop() {
         }
       }
 
-      // Eggs (limit visible eggs to 30)
       eLC += dt;
       if (eLC >= state.eggLayTime && eggMs.length < 30) { eLC = 0; layEgg(); }
       else if (eLC >= state.eggLayTime) { eLC = 0; state.eggs++; state.virtualWorkers++; }
@@ -541,7 +489,6 @@ function startGameLoop() {
         if (egg.hatchTimer <= 0) hatchEgg(egg, i);
       }
 
-      // Hatch FX
       for (var i = hatchFx.length - 1; i >= 0; i--) {
         var fx = hatchFx[i]; fx.life += dt; var t = fx.life / fx.maxLife;
         for (var ci = 0; ci < fx.group.children.length; ci++) {
@@ -552,7 +499,6 @@ function startGameLoop() {
         if (t >= 1) { disposeMesh(fx.group); scene.remove(fx.group); hatchFx.splice(i, 1); }
       }
 
-      // Workers, soldiers, scouts
       for (var wi = 0; wi < workers.length; wi++) updateWorker(workers[wi], dt);
       for (var si = 0; si < soldiers.length; si++) updateSoldier(soldiers[si], dt);
       for (var sci = 0; sci < scouts.length; sci++) updateScout(scouts[sci], dt);
@@ -571,12 +517,10 @@ function startGameLoop() {
       }
       combatUpdate(dt);
 
-      // Health bars
       for (var si = 0; si < soldiers.length; si++) updateHealthBar(soldiers[si].healthBar, soldiers[si].health / soldiers[si].maxHealth);
       for (var ei = 0; ei < enemies.length; ei++) updateHealthBar(enemies[ei].healthBar, enemies[ei].health / enemies[ei].maxHealth);
       if (state.bossActive && state.currentBoss) updateHealthBar(state.currentBoss.healthBar, state.currentBoss.health / state.currentBoss.maxHealth);
 
-      // Research chamber orbs
       if (researchChamberGroup && researchChamberGroup.children) {
         var time = performance.now() / 1000;
         for (var oi = 0; oi < researchChamberGroup.children.length; oi++) {
@@ -597,7 +541,6 @@ function startGameLoop() {
         if (st.markerMesh) { st.markerMesh.position.y = GTY + 1.3 + Math.sin(now / 400 + st.x) * 0.08; st.markerMesh.rotation.y += dt; }
       }
 
-      // Storage piles update throttled (every 30 seconds)
       storageUpdateCounter += dt;
       if (storagePilesDirty && storageUpdateCounter > 30) { storageUpdateCounter = 0; storagePilesDirty = false; updateStoragePiles(); }
 
@@ -618,7 +561,6 @@ function startGameLoop() {
       console.error('Loop error:', e);
       if (sC > 5) { sC = 0; showToast("⚠️ Minor hiccup — colony survived!"); }
     }
-    // Render always runs, even if update logic threw an error
     renderer.render(scene, camera);
   }
   animate();
