@@ -78,7 +78,7 @@ function hideMainMenu() {
   gamePaused = false;
 }
 
-// ----- Save slot rendering (three separate buttons, fixed sizing) -----
+// ----- Save slot rendering (three separate buttons) -----
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
@@ -114,7 +114,6 @@ window.playColony = function(slot) {
 };
 
 window.newColony = function(slot) {
-  // Force a fresh start
   loadSlot(slot);
 };
 
@@ -127,7 +126,6 @@ window.renameColony = function(slot) {
   if (!data) return;
   input.value = data.colonyName || ('Colony ' + (slot + 1));
   modal.style.display = 'flex';
-  // Auto-focus the input so the keyboard appears immediately on mobile
   setTimeout(function() { input.focus(); }, 100);
   document.getElementById('rename-confirm').onclick = function() {
     var newName = input.value.trim();
@@ -162,8 +160,13 @@ window.deleteColony = function(slot) {
 function performDelete(slot) {
   SaveManager.deleteSlot(slot);
   if (currentSlot === slot) {
-    currentSlot = -1;
+    // Stop the game loop and reset state to prevent leaked stats
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+    gameLoopActive = false;
     gamePaused = false;
+    clearAllMeshes();
+    resetStateToDefault(-1); // -1 means no slot
+    currentSlot = -1;
     showMainMenu();
   } else {
     renderSlots();
