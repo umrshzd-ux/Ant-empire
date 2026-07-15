@@ -15,8 +15,19 @@ var AudioManager = {};
       if (musicOn) AM.startMusic();
     }
   };
-  AM.resume = function() { if (ctx && ctx.state === 'suspended') ctx.resume(); };
 
+  AM.resume = function() {
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().then(function() {
+        // After resume, ensure music is playing if setting is on
+        if (musicOn && musicNodes.length === 0) {
+          AM.startMusic();
+        }
+      });
+    }
+  };
+
+  // ---- SFX helpers ----
   AM.playTone = function(freq, dur, vol, type, rampDown) {
     if (!ctx || !sfxOn) return;
     var o = ctx.createOscillator(), g = ctx.createGain();
@@ -44,6 +55,7 @@ var AudioManager = {};
     notes.forEach(function(n, i) { setTimeout(function() { AM.playTone(n.freq, n.dur || 0.1, (vol || 0.1) * 0.7, n.type || 'sine'); }, i * (dur / notes.length) * 1000); });
   };
 
+  // ---- SFX library ----
   AM.sfx = {
     click: function() { AM.playTone(800, 0.05, 0.08, 'square'); },
     foodCollect: function() { AM.playTone(400, 0.08, 0.06, 'sine'); setTimeout(function() { AM.playTone(600, 0.08, 0.06, 'sine'); }, 40); },
@@ -66,6 +78,7 @@ var AudioManager = {};
     ascend: function() { AM.playArpeggio([{freq:523,dur:0.1},{freq:659,dur:0.1},{freq:784,dur:0.1},{freq:1047,dur:0.2},{freq:1318,dur:0.3}], 0.9, 0.12); }
   };
 
+  // ---- Ambient (unchanged) ----
   AM.startAmbient = function() {
     if (!ctx || !ambientOn || !ambientGain) return;
     if (ambientNode) { try { ambientNode.stop(); } catch(e) {} }
@@ -91,19 +104,20 @@ var AudioManager = {};
     }
   };
 
+  // ---- Background Music (with click‑free fade‑out) ----
   AM.startMusic = function() {
     if (!ctx || !musicOn) return;
     AM.stopMusic();
     var now = ctx.currentTime;
-    var baseFreq = 130.81;
-    var chord = [1, 5/4, 3/2, 2];
+    var baseFreq = 130.81; // C3
+    var chord = [1, 5/4, 3/2, 2]; // C major chord over two octaves
     var masterGain = ctx.createGain();
-    masterGain.gain.value = 0.08;
+    masterGain.gain.value = 0.12; // increased volume
     masterGain.connect(ctx.destination);
     chord.forEach(function(ratio, i) {
       var osc = ctx.createOscillator(); osc.type = 'sine';
       osc.frequency.setValueAtTime(baseFreq * ratio, now);
-      var vol = ctx.createGain(); vol.gain.setValueAtTime(0.02, now); vol.gain.exponentialRampToValueAtTime(0.015, now + 2);
+      var vol = ctx.createGain(); vol.gain.setValueAtTime(0.025, now); vol.gain.exponentialRampToValueAtTime(0.015, now + 2);
       osc.connect(vol); vol.connect(masterGain); osc.start(now + i * 0.1);
       musicNodes.push({ osc: osc, gain: vol });
     });
@@ -140,9 +154,20 @@ var AudioManager = {};
   AM.setMusic = function(on) {
     musicOn = on;
     localStorage.setItem('antEmpire_music', on ? '1' : '0');
-    if (on) AM.startMusic(); else AM.stopMusic();
+    if (on) {
+      // If context is running, start immediately; otherwise it will start after resume
+      if (ctx && ctx.state === 'running') {
+        AM.startMusic();
+      } else if (ctx) {
+        // Will start after resume
+        AM.resume();
+      }
+    } else {
+      AM.stopMusic();
+    }
   };
 
+  // ---- Settings toggles ----
   AM.setSfx = function(on) { sfxOn = on; localStorage.setItem('antEmpire_sfx', on ? '1' : '0'); };
   AM.setAmbient = function(on) {
     ambientOn = on; localStorage.setItem('antEmpire_ambient', on ? '1' : '0');
@@ -154,6 +179,7 @@ var AudioManager = {};
 document.addEventListener('click', function() { AudioManager.resume(); }, { once: true });
 document.addEventListener('touchstart', function() { AudioManager.resume(); }, { once: true });
 
+// Settings
 var GameSettings = {
   sfxOn: true, ambientOn: true, musicOn: true, shakeOn: true,
   init: function() {
