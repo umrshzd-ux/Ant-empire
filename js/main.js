@@ -78,37 +78,34 @@ function hideMainMenu() {
   gamePaused = false;
 }
 
-// ----- Save slot rendering (inline onclick for reliability) -----
+// ----- Save slot rendering (three separate buttons) -----
 function renderSlots() {
   var slots = SaveManager.getAllSlots(), html = '';
   for (var i = 0; i < slots.length; i++) {
     var sl = slots[i];
-    html += '<div class="save-slot" onclick="handleSlotClick(' + i + ')">';
+    html += '<div class="save-slot">';
     if (sl.hasData) {
       var d = new Date(sl.lastSaved), timeAgo = 'just now', diff = Date.now() - sl.lastSaved;
       if (diff > 86400000) timeAgo = Math.floor(diff / 86400000) + 'd ago';
       else if (diff > 3600000) timeAgo = Math.floor(diff / 3600000) + 'h ago';
       else if (diff > 60000) timeAgo = Math.floor(diff / 60000) + 'm ago';
-      html += '<div style="display:flex; align-items:center; justify-content:space-between; width:100%;">' +
-              '<div>' +
-                '<div class="slot-name">🐜 ' + sl.name + '</div>' +
-                '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
-              '</div>' +
-              '<div style="display:flex; gap:4px;">' +
-                '<button class="rename-colony-btn" onclick="event.stopPropagation(); renameColony(' + i + ')">✏️</button>' +
-                '<button class="delete-colony-btn" onclick="event.stopPropagation(); showDeleteModal(' + i + ')">🗑️</button>' +
-              '</div>' +
-            '</div>';
+      html += '<div class="slot-name">🐜 ' + sl.name + '</div>' +
+              '<div class="slot-info">Lv ' + sl.level + ' | P' + sl.prestige + ' | A' + sl.ascension + ' | ' + timeAgo + '</div>' +
+              '<div style="display:flex; gap:8px; margin-top:10px; justify-content:center;">' +
+                '<button class="menu-btn play-colony-btn" onclick="playColony(' + i + '); event.stopPropagation();">▶️ Play</button>' +
+                '<button class="menu-btn rename-colony-btn" onclick="renameColony(' + i + '); event.stopPropagation();">✏️ Rename</button>' +
+                '<button class="menu-btn delete-colony-btn" onclick="deleteColony(' + i + '); event.stopPropagation();">🗑️ Delete</button>' +
+              '</div>';
     } else {
-      html += '<div class="slot-empty">+ New Colony</div>';
+      html += '<div class="slot-empty" onclick="newColony(' + i + ')">+ New Colony</div>';
     }
     html += '</div>';
   }
   document.getElementById('save-slots').innerHTML = html;
 }
 
-// Global function to handle slot click
-window.handleSlotClick = function(slot) {
+// Global functions for buttons
+window.playColony = function(slot) {
   if (slot === currentSlot && gameSystemsReady && gamePaused) {
     hideMainMenu();
   } else {
@@ -116,34 +113,44 @@ window.handleSlotClick = function(slot) {
   }
 };
 
-// Global rename function
-window.renameColony = function(slot) {
-  var data = SaveManager.loadGame(slot);
-  if (!data) return;
-  var newName = prompt('Enter new colony name:', data.colonyName || ('Colony ' + (slot + 1)));
-  if (newName && newName.trim()) {
-    data.colonyName = newName.trim();
-    SaveManager.saveGame(slot, data);
-    if (currentSlot === slot) {
-      state.colonyName = data.colonyName;
-    }
-    renderSlots();
-  }
+window.newColony = function(slot) {
+  loadSlot(slot);
 };
 
-// Global delete modal
-window.showDeleteModal = function(slot) {
+window.renameColony = function(slot) {
+  var modal = document.getElementById('rename-modal');
+  if (!modal) return;
+  var input = document.getElementById('rename-input');
+  var data = SaveManager.loadGame(slot);
+  if (!data) return;
+  input.value = data.colonyName || ('Colony ' + (slot + 1));
+  modal.style.display = 'flex';
+  document.getElementById('rename-confirm').onclick = function() {
+    var newName = input.value.trim();
+    if (newName) {
+      data.colonyName = newName;
+      SaveManager.saveGame(slot, data);
+      if (currentSlot === slot) {
+        state.colonyName = newName;
+      }
+      renderSlots();
+    }
+    modal.style.display = 'none';
+  };
+  document.getElementById('rename-cancel').onclick = function() {
+    modal.style.display = 'none';
+  };
+};
+
+window.deleteColony = function(slot) {
   var modal = document.getElementById('delete-modal');
   if (!modal) return;
-  var confirmBtn = document.getElementById('delete-confirm');
-  var cancelBtn = document.getElementById('delete-cancel');
-  if (!confirmBtn || !cancelBtn) return;
   modal.style.display = 'flex';
-  confirmBtn.onclick = function() {
+  document.getElementById('delete-confirm').onclick = function() {
     performDelete(slot);
     modal.style.display = 'none';
   };
-  cancelBtn.onclick = function() {
+  document.getElementById('delete-cancel').onclick = function() {
     modal.style.display = 'none';
   };
 };
