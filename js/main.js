@@ -160,12 +160,11 @@ window.deleteColony = function(slot) {
 function performDelete(slot) {
   SaveManager.deleteSlot(slot);
   if (currentSlot === slot) {
-    // Stop the game loop and reset state to prevent leaked stats
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
     gameLoopActive = false;
     gamePaused = false;
     clearAllMeshes();
-    resetStateToDefault(-1); // -1 means no slot
+    resetStateToDefault(-1);
     currentSlot = -1;
     showMainMenu();
   } else {
@@ -337,7 +336,7 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop (with pause support, render outside try) -----
+// ----- Main loop (with pause, build queue, food tension, reactive events) -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 var vwFoodAccum = 0;
 
@@ -373,6 +372,7 @@ function startGameLoop() {
       if (state.luckyHourTimer > 0) { state.luckyHourTimer -= dt; }
       if (state.defenseBannerTimer > 0) { state.defenseBannerTimer -= dt; }
 
+      // Virtual worker food (accumulate and add once per second)
       if (state.virtualWorkers > 0) {
         vwFoodAccum += state.virtualWorkers * BAL.virtualFoodPerSecond * dt;
         if (vwFoodAccum >= 1) {
@@ -384,6 +384,23 @@ function startGameLoop() {
 
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
+      // Build Queue processing
+      if (state.buildQueue.length > 0) {
+        var currentBuild = state.buildQueue[0];
+        currentBuild.timeRemaining -= dt;
+        if (currentBuild.timeRemaining <= 0) {
+          switch (currentBuild.type) {
+            case "foodStorage": buildFoodStorageChamber(); break;
+            case "nursery": buildNurseryChamber(); break;
+            case "soldier": buildSoldierChamber(); break;
+            case "research": buildResearchChamber(); break;
+            case "scout": buildScoutChamber(); break;
+          }
+          state.buildQueue.shift();
+        }
+      }
+
+      // Rain update
       if (state.weatherActive && state.weatherType === "rain") {
         if (!window._lastRainUpdate) window._lastRainUpdate = 0;
         window._lastRainUpdate += dt;
@@ -409,10 +426,38 @@ function startGameLoop() {
       else { if (state.waveSpidersRemaining <= 0 && enemies.length === 0) endWave(); }
       updateWaveTimer();
 
-      if (!state.eventActive) { state.eventTimer -= dt; if (state.eventTimer <= 0) triggerRandomEvent(); }
-      else { state.eventTimer -= dt; if (state.eventTimer <= -15) { state.eventActive = false; eventBtn.style.display = "none"; state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin); } }
+      // Event handling (reactive events first)
+      if (!state.eventActive && !state.eventChoiceActive) {
+        state.eventTimer -= dt;
+        if (state.eventTimer <= 0) {
+          // Check reactive events
+          var reactiveAvailable = [];
+          for (var i = 0; i < REACTIVE_EVENTS.length; i++) {
+            if (REACTIVE_EVENTS[i].condition()) reactiveAvailable.push(REACTIVE_EVENTS[i]);
+          }
+          if (reactiveAvailable.length > 0 && Math.random() < 0.7) {
+            var rev = reactiveAvailable[Math.floor(Math.random() * reactiveAvailable.length)];
+            state.eventChoices = rev.choices;
+            state.eventChoiceActive = true;
+            state.eventActive = true;
+            showReactiveEventUI(rev);
+          } else {
+            // Fallback classic event
+            triggerRandomEvent();
+          }
+        }
+      } else if (state.eventActive && !state.eventChoiceActive) {
+        // Classic event timeout
+        state.eventTimer -= dt;
+        if (state.eventTimer <= -15) {
+          state.eventActive = false;
+          if (eventBtn) eventBtn.style.display = "none";
+          state.eventTimer = BAL.eventIntervalMin + Math.random() * (BAL.eventIntervalMax - BAL.eventIntervalMin);
+        }
+      }
       updateEventTimer();
 
+      // Boss logic
       if (!state.bossActive) {
         state.bossTimer -= dt;
         if (state.bossTimer <= 0) {
@@ -426,6 +471,7 @@ function startGameLoop() {
       }
       updateBossTimer();
 
+      // Weather logic
       if (!state.weatherActive) {
         state.weatherTimer -= dt;
         if (state.weatherTimer <= 0) {
@@ -464,6 +510,7 @@ function startGameLoop() {
 
       if (state.deadSoldiers > 0) { state.soldierRespawnTimer -= dt; if (state.soldierRespawnTimer <= 0) respawnSoldier(); }
 
+      // Enemies
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
         if (sp.stealing && sp.fleeTarget) {
@@ -481,6 +528,7 @@ function startGameLoop() {
         }
       }
 
+      // Eggs
       eLC += dt;
       if (eLC >= state.eggLayTime && eggMs.length < 30) { eLC = 0; layEgg(); }
       else if (eLC >= state.eggLayTime) { eLC = 0; state.eggs++; state.virtualWorkers++; }
@@ -503,6 +551,7 @@ function startGameLoop() {
         if (egg.hatchTimer <= 0) hatchEgg(egg, i);
       }
 
+      // Hatch FX
       for (var i = hatchFx.length - 1; i >= 0; i--) {
         var fx = hatchFx[i]; fx.life += dt; var t = fx.life / fx.maxLife;
         for (var ci = 0; ci < fx.group.children.length; ci++) {
@@ -513,6 +562,7 @@ function startGameLoop() {
         if (t >= 1) { disposeMesh(fx.group); scene.remove(fx.group); hatchFx.splice(i, 1); }
       }
 
+      // Workers, soldiers, scouts
       for (var wi = 0; wi < workers.length; wi++) updateWorker(workers[wi], dt);
       for (var si = 0; si < soldiers.length; si++) updateSoldier(soldiers[si], dt);
       for (var sci = 0; sci < scouts.length; sci++) updateScout(scouts[sci], dt);
@@ -531,10 +581,12 @@ function startGameLoop() {
       }
       combatUpdate(dt);
 
+      // Health bars
       for (var si = 0; si < soldiers.length; si++) updateHealthBar(soldiers[si].healthBar, soldiers[si].health / soldiers[si].maxHealth);
       for (var ei = 0; ei < enemies.length; ei++) updateHealthBar(enemies[ei].healthBar, enemies[ei].health / enemies[ei].maxHealth);
       if (state.bossActive && state.currentBoss) updateHealthBar(state.currentBoss.healthBar, state.currentBoss.health / state.currentBoss.maxHealth);
 
+      // Research chamber orbs
       if (researchChamberGroup && researchChamberGroup.children) {
         var time = performance.now() / 1000;
         for (var oi = 0; oi < researchChamberGroup.children.length; oi++) {
