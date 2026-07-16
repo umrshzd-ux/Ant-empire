@@ -132,6 +132,11 @@ function spawnBoss() {
       bossMesh.position.set(sx, GTY + 0.5, sz);
       scene.add(bossMesh);
 
+      // If no soldiers, boss stops at a safe distance from nest
+      var initialTarget = soldiers.length === 0
+        ? new THREE.Vector3(ER.x + 4, ER.y, ER.z)   // stop 4 units away
+        : ER.clone();
+
       var hb = typeof createHealthBar === 'function' ? createHealthBar(bossMesh, 120, 12, 1.8) : null;
       var hbFill = document.getElementById('boss-health-fill');
       if (hbFill) {
@@ -144,7 +149,7 @@ function spawnBoss() {
         maxHealth: bossHealth,
         healthBar: hb,
         speed: BAL[bt.spdKey],
-        target: ER.clone(),
+        target: initialTarget,
         attackCooldown: 0,
         lastAttack: 0,
         bossKey: bossKey,
@@ -188,7 +193,6 @@ function updateBoss(dt) {
     var dtn = boss.mesh.position.distanceTo(ER);
     if (dtn < 1.5) {
       state._bossRetreatTimer = (state._bossRetreatTimer || 0) + dt;
-      // Steal food every 2 seconds
       if (!state._lastBossStealTime) state._lastBossStealTime = 0;
       state._lastBossStealTime += dt;
       if (state._lastBossStealTime >= 2) {
@@ -200,15 +204,22 @@ function updateBoss(dt) {
           spawnFloater("-" + stolen + " 🌾", window.innerWidth / 2, window.innerHeight / 2, "#ff6666");
         }
       }
-      // After 30 seconds at nest with no soldiers, retreat
       if (state._bossRetreatTimer > 30) {
         killBoss();
         showToast("💀 Boss left the colony!");
         return;
       }
     } else {
-      state._bossRetreatTimer = Math.max(0, (state._bossRetreatTimer || 0) - dt); // decay timer if boss moves away
+      state._bossRetreatTimer = Math.max(0, (state._bossRetreatTimer || 0) - dt);
     }
+    // Keep boss at safe distance: set target away from nest if no soldiers
+    var offsetTarget = new THREE.Vector3(ER.x + 4, ER.y, ER.z);
+    if (boss.mesh.position.distanceTo(offsetTarget) > 0.5) {
+      boss.target.copy(offsetTarget);
+    }
+  } else {
+    // Soldiers exist: boss targets the nest to attack soldiers
+    boss.target.copy(ER);
   }
 
   var p = boss.mesh.position;
@@ -223,7 +234,7 @@ function updateBoss(dt) {
   }
   var now = performance.now() / 1000;
   if (boss.attackCooldown > 0) boss.attackCooldown -= dt;
-  if (boss.attackCooldown <= 0 && dist < 2.5) {
+  if (boss.attackCooldown <= 0 && dist < 2.5 && soldiers.length > 0) {
     for (var i = 0; i < soldiers.length; i++) {
       if (soldiers[i].mesh.position.distanceTo(p) < 2.5) {
         var dmg = BAL[bt.dmgKey];
@@ -312,4 +323,4 @@ function summonBoss() {
   if (summonBtn) summonBtn.disabled = true;
   spawnBoss();
   showToast("💀 Boss summoned!");
-    }
+}
