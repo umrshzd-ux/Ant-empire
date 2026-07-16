@@ -226,17 +226,14 @@ function updateWorker(w, dt) {
     w.mesh.userData.idleTime += dt;
     w.mesh.userData.headMesh.rotation.z = Math.sin(w.mesh.userData.idleTime * 3) * 0.1;
   }
-  // Flee from nearby enemies (spiders) AND boss
-  if (isEnemyNearby(w, BAL.workerFleeRange) || isBossNearby(w, BAL.workerFleeRange * 2)) {
+
+  // Flee from spiders only (boss is ignored near nest, handled separately)
+  if (isEnemyNearby(w, BAL.workerFleeRange)) {
     w.avoidTimer = 0.5;
     var nearestPos = null, nd = 999;
     for (var i = 0; i < enemies.length; i++) {
       var d = w.mesh.position.distanceTo(enemies[i].mesh.position);
       if (d < nd) { nd = d; nearestPos = enemies[i].mesh.position; }
-    }
-    if (state.bossActive && state.currentBoss && state.currentBoss.mesh) {
-      var bd = w.mesh.position.distanceTo(state.currentBoss.mesh.position);
-      if (bd < nd) { nd = bd; nearestPos = state.currentBoss.mesh.position; }
     }
     if (nearestPos) {
       var dx = w.mesh.position.x - nearestPos.x, dz = w.mesh.position.z - nearestPos.z, a = Math.atan2(dx, dz);
@@ -247,12 +244,27 @@ function updateWorker(w, dt) {
   }
   if (w.avoidTimer > 0) { w.avoidTimer -= dt; return; }
 
-  // WORKER SOLDIER AVOIDANCE – completely disabled near nest AND when returning home with food
+  // Boss avoidance: only flee if boss is very close AND worker is not near nest
   var distToEntrance = w.mesh.position.distanceTo(ER);
-  var distToNest = w.mesh.position.distanceTo(NP);
-  var isNearNest = (distToEntrance < 3.0 || distToNest < 3.0);
-  var isReturningHome = (w.state === "TO_NEST" || w.state === "CARRY_EGG");
-  if (!(isNearNest && isReturningHome) && avoidSoldiers(w)) return;
+  var nearNest = distToEntrance < 3.0;
+  if (!nearNest && isBossNearby(w, BAL.workerFleeRange)) {
+    w.avoidTimer = 0.5;
+    if (state.bossActive && state.currentBoss && state.currentBoss.mesh) {
+      var bdx = w.mesh.position.x - state.currentBoss.mesh.position.x;
+      var bdz = w.mesh.position.z - state.currentBoss.mesh.position.z;
+      var a = Math.atan2(bdx, bdz);
+      w.mesh.position.x += Math.sin(a) * 0.03;
+      w.mesh.position.z += Math.cos(a) * 0.03;
+    }
+    return;
+  }
+
+  // Soldier avoidance
+  if (!avoidSoldiers(w)) {
+    // continue normal movement
+  } else {
+    return; // avoidSoldiers already set avoidTimer
+  }
 
   if (w.birthTimer !== undefined && w.birthTimer > 0) {
     w.birthTimer -= dt;
@@ -385,13 +397,9 @@ function updateQueenIdle(dt) {
 }
 function avoidSoldiers(w) {
   if (w.isSoldier || w.isScout) return false;
-  // NEW: completely ignore soldiers if worker is near nest AND heading home
+  // Always allow passage when very close to nest entrance or carrying food back
   var distToEntrance = w.mesh.position.distanceTo(ER);
-  var distToNest = w.mesh.position.distanceTo(NP);
-  if ((distToEntrance < 3.0 || distToNest < 3.0) &&
-      (w.state === "TO_NEST" || w.state === "CARRY_EGG")) {
-    return false;
-  }
+  if (distToEntrance < 2.5 && (w.state === "TO_NEST" || w.carrying)) return false;
   for (var i = 0; i < soldiers.length; i++) {
     if (w.mesh && w.mesh.position.distanceTo(soldiers[i].mesh.position) < 0.7) {
       w.avoidTimer = 0.3;
@@ -423,8 +431,8 @@ function updateHealthBar(bar, ratio) {
 }
 function spawnSoldier(chX) {
   var mesh = buildAntMesh(1.8, 0x3a1a0a, 1.5);
-  // Spawn soldier at its barracks underground, NOT at the nest entrance
-  mesh.position.set(chX, CCFY + 0.05, CZ);
+  // Spawn on the surface entrance so they never travel underground
+  mesh.position.copy(ER);
   scene.add(mesh);
   mesh.userData.labelObj = addLabel(mesh, "🛡️ Soldier Lv" + (state.upgrades.soldierDamage + 1), 1.1);
   var hb = createHealthBar(mesh, 60, 8, 1.2);
@@ -433,9 +441,9 @@ function spawnSoldier(chX) {
     mesh: mesh, health: mh, maxHealth: mh, healthBar: hb,
     patrolIndex: 0, target: PATROL_POINTS[0].clone(), speed: 0.9 + Math.random() * 0.3,
     waitTimer: 0, isSoldier: true, attackCooldown: 0, lastCombatTime: 0,
-    guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1,
-    homeX: chX, homeY: CCFY + 0.05, homeZ: CZ  // home position (barracks)
+    guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1
   };
+  // Static guard mesh remains at the barracks
   var gm = buildAntMesh(1.5, 0x3a1a0a, 1.3);
   gm.position.set(chX, CCFY + 0.05, CZ);
   gm.rotation.y = Math.PI / 2;
@@ -483,15 +491,6 @@ function updateSoldier(s, dt) {
   }
   if (s.waitTimer > 0) { s.waitTimer -= dt; return; }
 
-  // Soldier push: if standing too close to the nest entrance, gently push away
-  var distToEntrance = s.mesh.position.distanceTo(ER);
-  if (distToEntrance < 2.0 && (state.bossActive ? soldiers.length <= 3 : true)) {
-    var pushDir = new THREE.Vector3().subVectors(s.mesh.position, ER).normalize();
-    if (pushDir.length() < 0.01) pushDir.set(1, 0, 0);
-    s.mesh.position.x += pushDir.x * dt * 0.8;
-    s.mesh.position.z += pushDir.z * dt * 0.8;
-  }
-
   var ne = null, nd = 4.0;
   for (var i = 0; i < enemies.length; i++) {
     var d = s.mesh.position.distanceTo(enemies[i].mesh.position);
@@ -523,8 +522,7 @@ function updateSoldier(s, dt) {
       return;
     }
   }
-
-  // Normal patrol – if no enemies, move toward patrol point
+  // Normal patrol – only on surface
   var tgt = s.target;
   var dx = tgt.x - s.mesh.position.x, dy = tgt.y - s.mesh.position.y, dz = tgt.z - s.mesh.position.z;
   var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -541,9 +539,8 @@ function updateSoldier(s, dt) {
   s.mesh.rotation.y += ad * Math.min(1, dt * 3);
   var step = Math.min(s.speed * dt, dist);
   s.mesh.position.x += (dx / dist) * step;
-  s.mesh.position.y += (dy / dist) * step;
+  s.mesh.position.y = GTY; // lock to surface
   s.mesh.position.z += (dz / dist) * step;
-  s.mesh.position.y += Math.sin(performance.now() / 150 + s.mesh.position.x * 3) * 0.004;
 }
 
 var scouts = [];
@@ -670,7 +667,8 @@ function hatchEgg(egg, i) {
   state.lifetimeStats.totalHatched++;
   updateEggLayTime();
   var rt = null;
-  if (Math.random() < BAL.rareAntChance) {
+  // Increased rare chance from 0.05 to 0.08
+  if (Math.random() < 0.08) {
     rt = RARE_TYPES[Math.floor(Math.random() * RARE_TYPES.length)];
     state.rareAntCount++;
     updateDailyProgress('rare1', 1);
@@ -696,7 +694,7 @@ function hatchEgg(egg, i) {
   pTH();
 }
 
-// Boss detection for workers
+// Boss detection – only used when worker is far from nest
 function isBossNearby(w, range) {
   if (!state.bossActive || !state.currentBoss || !state.currentBoss.mesh) return false;
   if (!w.mesh) return false;
