@@ -1,5 +1,7 @@
 // ===== ANT MODEL, WORKERS, SOLDIERS, SCOUTS, QUEEN, EGGS =====
 
+var NEST_SAFE_RADIUS = 6.0; // ants within this radius of the entrance ignore boss/soldier flee logic
+
 function buildAntMesh(scale, bodyColor, headScale, goldenColor, mandibleOverride, rareColor) {
   var g = new THREE.Group();
   var bh = 0.22;
@@ -245,9 +247,9 @@ function updateWorker(w, dt) {
   }
   if (w.avoidTimer > 0) { w.avoidTimer -= dt; return; }
 
-  // Boss avoidance – only flee if far from nest
+  // Boss avoidance – nest entrance is always a safe corridor
   var distToEntrance = w.mesh.position.distanceTo(ER);
-  if (distToEntrance > 3.0 && isBossNearby(w, BAL.workerFleeRange * 2)) {
+  if (distToEntrance > NEST_SAFE_RADIUS && isBossNearby(w, BAL.workerFleeRange * 2)) {
     w.avoidTimer = 0.5;
     if (state.bossActive && state.currentBoss && state.currentBoss.mesh) {
       var bdx = w.mesh.position.x - state.currentBoss.mesh.position.x;
@@ -259,8 +261,8 @@ function updateWorker(w, dt) {
     return;
   }
 
-  // Soldier avoidance – completely ignored when near nest or carrying food home
-  if (!(distToEntrance < 2.5 && (w.state === "TO_NEST" || w.carrying))) {
+  // Soldier avoidance – ignored inside the safe corridor or when heading home with food
+  if (!(distToEntrance < NEST_SAFE_RADIUS && (w.state === "TO_NEST" || w.carrying))) {
     if (avoidSoldiers(w)) return;
   }
 
@@ -395,8 +397,7 @@ function updateQueenIdle(dt) {
 }
 function avoidSoldiers(w) {
   if (w.isSoldier || w.isScout) return false;
-  // Always allow passage when very close to nest entrance
-  if (w.mesh.position.distanceTo(ER) < 2.5) return false;
+  if (w.mesh.position.distanceTo(ER) < NEST_SAFE_RADIUS) return false;
   for (var i = 0; i < soldiers.length; i++) {
     if (w.mesh && w.mesh.position.distanceTo(soldiers[i].mesh.position) < 0.7) {
       w.avoidTimer = 0.3;
@@ -466,6 +467,10 @@ function soldierDied(soldier) {
   state.deadSoldiers++;
   state.soldierRespawnTimer = BAL.soldierRespawnTime;
   showToast("💀 Soldier fallen!");
+
+  if (state.bossActive && soldiers.length === 0) {
+    resolveBossFight("defeat"); // guard wiped out — fight is over, boss wins
+  }
 }
 function respawnSoldier() {
   state.soldierCount++;
@@ -507,7 +512,6 @@ function updateSoldier(s, dt) {
     var bPos = state.currentBoss.mesh.position;
     var bDist = s.mesh.position.distanceTo(bPos);
     if (bDist < 8.0) {
-      // rush toward boss
       var bdx = bPos.x - s.mesh.position.x, bdz = bPos.z - s.mesh.position.z;
       var bDist2 = Math.sqrt(bdx * bdx + bdz * bdz);
       if (bDist2 > 1.2) {
@@ -516,13 +520,12 @@ function updateSoldier(s, dt) {
         s.mesh.position.z += (bdz / bDist2) * bstep;
         s.mesh.rotation.y = Math.atan2(bdx, bdz);
         s.mesh.position.y = GTY;
-        s.waitTimer = 0; // don't wait when boss is near
+        s.waitTimer = 0;
         return;
       }
     }
   }
 
-  // Normal enemy pursuit
   var ne = null, nd = 4.0;
   for (var i = 0; i < enemies.length; i++) {
     var d = s.mesh.position.distanceTo(enemies[i].mesh.position);
@@ -539,7 +542,6 @@ function updateSoldier(s, dt) {
     }
     return;
   }
-
   // Patrol on surface
   var tgt = s.target;
   var dx = tgt.x - s.mesh.position.x, dz = tgt.z - s.mesh.position.z;
@@ -716,4 +718,4 @@ function isBossNearby(w, range) {
   if (!state.bossActive || !state.currentBoss || !state.currentBoss.mesh) return false;
   if (!w.mesh) return false;
   return w.mesh.position.distanceTo(state.currentBoss.mesh.position) < range;
-          }
+    }
