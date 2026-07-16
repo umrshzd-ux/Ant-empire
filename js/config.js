@@ -16,7 +16,10 @@ var BAL = {
   maxNursery: 3, maxSoldierChambers: 5, maxScoutChambers: 3, soldierRowStart: 10, researchRowStart: 16, scoutRowStart: 22,
   spiderSneakChance: 0.1, spiderGuardRadius: 2.5, bossIntervalMin: 1500, bossIntervalMax: 2100,
   bossHealthQueen: 250, bossHealthBeetle: 400, bossHealthWasp: 150, bossDamageQueen: 15, bossDamageBeetle: 10, bossDamageWasp: 20,
-  bossSpeedQueen: 0.2, bossSpeedBeetle: 0.1, bossSpeedWasp: 0.4, bossRewardFood: 80, bossRewardGems: 5, summonCost: 5,
+  bossSpeedQueen: 0.6,      // increased from 0.2
+  bossSpeedBeetle: 0.4,     // increased from 0.1
+  bossSpeedWasp: 0.8,       // increased from 0.4
+  bossRewardFood: 80, bossRewardGems: 5, summonCost: 5,
   prestigeLevelReq: 30, prestigePPPerLevel: 0.5, prestigeBasePP: 3, workerRebalanceInterval: 300,
   speedBoostDuration: 300, evolutionUnlockLevel: 8,
   ascendUnlockPrestige: 100,
@@ -24,9 +27,9 @@ var BAL = {
   ascensionMultiplierDamage: 1.05,
   ascensionMultiplierGem: 1.05,
   ascensionMultiplierHatch: 0.95,
-  bossHealthCentipede: 300, bossDamageCentipede: 18, bossSpeedCentipede: 0.25,
-  bossHealthHydra: 350, bossDamageHydra: 14, bossSpeedHydra: 0.15,
-  bossHealthWyrm: 400, bossDamageWyrm: 22, bossSpeedWyrm: 0.3,
+  bossHealthCentipede: 300, bossDamageCentipede: 18, bossSpeedCentipede: 0.55,
+  bossHealthHydra: 350, bossDamageHydra: 14, bossSpeedHydra: 0.35,
+  bossHealthWyrm: 400, bossDamageWyrm: 22, bossSpeedWyrm: 0.5,
 
   // Build Queue times (seconds per chamber)
   buildTimes: {
@@ -39,8 +42,8 @@ var BAL = {
   // Food tension thresholds
   foodLowThreshold: 0.2,
   foodHighThreshold: 0.8,
-  foodTensionMaxSlowdown: 0.5, // at 0 food, worker speed * 0.5
-  foodTensionHatchBoost: 0.2   // at high food, hatch time reduced by 20%
+  foodTensionMaxSlowdown: 0.5,
+  foodTensionHatchBoost: 0.2
 };
 
 var UPGRADES = {
