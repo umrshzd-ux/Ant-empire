@@ -337,7 +337,7 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop (with label visibility control) -----
+// ----- Main loop (with isolated error handling) -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 var vwFoodAccum = 0;
 
@@ -632,14 +632,17 @@ function startGameLoop() {
       }
     } catch(e) { console.error('Health bar error:', e); }
 
-    // Label visibility: only show labels when camera is underground (looking at tunnel)
+    // Label visibility: show/hide based on undergroundOnly flag
     try {
       var cameraY = camera.position.y;
-      var isUnderground = cameraY < CCY + 1.0; // below surface level
-      // Toggle all sprites that are labels
+      var isUnderground = cameraY < CCY + 1.0;
       scene.traverse(function(obj) {
         if (obj.isSprite && obj.userData && obj.userData.isLabel) {
-          obj.visible = isUnderground;
+          if (obj.userData.undergroundOnly) {
+            obj.visible = isUnderground;
+          } else {
+            obj.visible = true; // surface labels always visible
+          }
         }
       });
     } catch(e) { console.error('Label visibility error:', e); }
