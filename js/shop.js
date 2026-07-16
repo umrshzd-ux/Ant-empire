@@ -6,13 +6,17 @@ function buyGemItem(ik) {
   if (item.oneTime && state.gemUpgrades[ik]) { showToast("Already owned!"); return; }
   if (state.gems < item.cost) { showToast("Need " + item.cost + " 💎"); return; }
 
-  // Safe sound helper
+  // Block Boss Lure if no soldier chamber
+  if (ik === "bossLure" && state.chambers.soldier.count === 0) {
+    showToast("Build a Soldier Chamber first!");
+    return;
+  }
+
   function safeSound() { try { AudioManager.sfx.buttonClick(); } catch(e) {} }
 
   try {
     state.gems -= item.cost;
 
-    // --- Permanent upgrades ---
     if (ik === "goldenEgg") {
       state.gemUpgrades[ik] = true;
       state.workerCount++;
@@ -65,13 +69,11 @@ function buyGemItem(ik) {
       state.gemUpgrades[ik] = true;
       showToast("🔥 Rare ant chance +10%");
     }
-    // --- Skins ---
     else if (["shadowSkin","fireSkin","iceSkin","rainbowSkin","glowingNest","crystalEntrance","royalCarpet","goldenSparkles"].indexOf(ik) !== -1) {
       state.gemUpgrades[ik] = true;
-      if (ik.indexOf("Skin") !== -1) rebuildAllWorkerMeshes(); // skin change
+      if (ik.indexOf("Skin") !== -1) rebuildAllWorkerMeshes();
       showToast(item.name + " unlocked!");
     }
-    // --- Consumables ---
     else if (ik === "speedBoost") {
       state.speedBoostTimer = BAL.speedBoostDuration;
       applyAllWorkerSpeeds();
@@ -87,6 +89,7 @@ function buyGemItem(ik) {
       showToast("🍞 +500 food");
     }
     else if (ik === "bossLure") {
+      // already guarded above
       if (state.bossActive) { showToast("Boss already active!"); return; }
       spawnBoss();
       showToast("💀 Boss summoned!");
@@ -104,15 +107,14 @@ function buyGemItem(ik) {
       showToast("🔱 Rally cooldown reset!");
     }
     else if (ik === "luckyHour") {
-      state.luckyHourTimer = 300; // 5 min
+      state.luckyHourTimer = 300;
       showToast("🎯 Lucky Hour activated (5 min)");
     }
     else if (ik === "defenseBanner") {
-      state.defenseBannerTimer = 180; // 3 min
+      state.defenseBannerTimer = 180;
       showToast("🛡️ Defense Banner active (3 min)");
     }
 
-    // Disable button if one-time
     if (item.oneTime) {
       var btn = document.getElementById("btn-shop-" + ik);
       if (btn) { btn.disabled = true; btn.textContent = "Owned"; }
@@ -122,7 +124,7 @@ function buyGemItem(ik) {
     saveGame();
   } catch(e) {
     console.error(e);
-    state.gems += item.cost; // refund
+    state.gems += item.cost;
     showToast("Error purchasing item. Gems refunded.");
   }
 }
@@ -138,7 +140,6 @@ function rebuildAllWorkerMeshes() {
     else if (state.gemUpgrades.shadowSkin) skinColor = 0x333333;
     else if (state.gemUpgrades.fireSkin) skinColor = 0xff6600;
     else if (state.gemUpgrades.iceSkin) skinColor = 0x88ccff;
-    // rainbow skin would need dynamic; skip for now
     var newMesh = buildAntMesh(ws, skinColor, 1, null, null, w.isRare ? w.rareType.color : null);
     newMesh.position.copy(oldMesh.position);
     newMesh.rotation.copy(oldMesh.rotation);
@@ -147,4 +148,4 @@ function rebuildAllWorkerMeshes() {
     scene.add(newMesh);
     w.mesh = newMesh;
   }
-             }
+}
