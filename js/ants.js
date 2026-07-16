@@ -247,8 +247,10 @@ function updateWorker(w, dt) {
   }
   if (w.avoidTimer > 0) { w.avoidTimer -= dt; return; }
 
-  // If the worker is near the nest, skip soldier avoidance so it can deposit food
-  var nearNest = w.mesh.position.distanceTo(NP) < 1.5;
+  // If the worker is close to the surface entrance or the underground nest, skip soldier avoidance
+  var distToEntrance = w.mesh.position.distanceTo(ER);
+  var distToNest = w.mesh.position.distanceTo(NP);
+  var nearNest = distToEntrance < 2.5 || distToNest < 2.5;
   if (!nearNest && avoidSoldiers(w)) return;
 
   if (w.birthTimer !== undefined && w.birthTimer > 0) {
@@ -382,8 +384,8 @@ function updateQueenIdle(dt) {
 }
 function avoidSoldiers(w) {
   if (w.isSoldier || w.isScout) return false;
-  // If worker is very close to nest, allow passage even if soldier is nearby
-  if (w.mesh.position.distanceTo(NP) < 1.5) return false;
+  // If worker is close to surface entrance or underground nest, allow passage
+  if (w.mesh.position.distanceTo(ER) < 2.5 || w.mesh.position.distanceTo(NP) < 2.5) return false;
   for (var i = 0; i < soldiers.length; i++) {
     if (w.mesh && w.mesh.position.distanceTo(soldiers[i].mesh.position) < 0.7) {
       w.avoidTimer = 0.3;
@@ -677,4 +679,4 @@ function isBossNearby(w, range) {
   if (!state.bossActive || !state.currentBoss || !state.currentBoss.mesh) return false;
   if (!w.mesh) return false;
   return w.mesh.position.distanceTo(state.currentBoss.mesh.position) < range;
-               }
+                                                 }
