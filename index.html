@@ -775,6 +775,7 @@ canvas { display: block; }
 <div id="more-panel">
   <button class="build-btn" id="btn-evolution" style="display:none">🧬Evolve</button>
   <button class="build-btn" id="btn-achievements">🏆Feats</button>
+  <button class="build-btn" id="btn-research" style="display:none">🔬Research</button>
   <button class="build-btn" id="btn-prestige-shop" style="display:none">✨Prestige</button>
   <button class="build-btn" id="btn-ascension-shop" style="display:none">⬆Ascension</button>
   <button class="build-btn" id="btn-daily">📋Daily</button>
@@ -835,7 +836,8 @@ canvas { display: block; }
   <div class="panel-option"><span>Nursery</span><button id="build-nursery">100🌾</button></div>
   <div class="panel-option"><span>Soldier Chamber</span><button id="build-soldier">150🌾</button></div>
   <div class="panel-option"><span>Research Chamber</span><button id="build-research">200🌾</button></div>
-  <div class="panel-option"><span>Scout Chamber</span><button id="build-scout">180🌾</button></div>
+  <div class="panel-option"><span>Scout Post</span><button id="build-scout">180🌾</button></div>
+  <div class="panel-option"><span>Royal Chamber</span><button id="build-royal">300🌾</button></div>
 </div>
 <div id="evolution-panel" class="game-panel"><div style="color:#ff88cc;font-weight:700;text-align:center">🧬 Ant Evolution</div><div id="evo-list"></div></div>
 <div id="upgrade-panel" class="game-panel">
@@ -844,6 +846,7 @@ canvas { display: block; }
   <div class="panel-option"><span>🥚Queen Fertility</span><span id="upg-egg"></span><button id="btn-upg-egg">Buy</button></div>
   <div class="panel-option"><span>📦Storage</span><span id="upg-cap"></span><button id="btn-upg-cap">Buy</button></div>
 </div>
+<div id="research-panel" class="game-panel"><div style="color:#ffd27a;font-weight:700;text-align:center">🔬 Research Tree</div><div id="research-content"></div></div>
 <div id="prestige-shop-panel" class="game-panel"><div style="color:#ff44ff;font-weight:700;text-align:center">✨ Prestige Shop</div><div id="prestige-shop-list"></div></div>
 <div id="ascension-shop-panel" class="game-panel"><div style="color:#ffaa00;font-weight:700;text-align:center">⬆️ Ascension Shop</div><div id="ascension-shop-list"></div></div>
 <div id="achievements-panel" class="game-panel"><div style="color:#ffd27a;font-weight:700;text-align:center">🏆 Achievements</div><div id="ach-list"></div></div>
@@ -877,6 +880,16 @@ canvas { display: block; }
 <script src="js/config.js?v=final-perf"></script>
 <script src="js/state.js?v=final-perf"></script>
 <script src="js/terrain.js?v=final-perf"></script>
+<script src="js/discoveries.js?v=final-perf"></script>
+<script src="js/goals.js?v=final-perf"></script>
+<script src="js/biomes.js?v=final-perf"></script>
+<script src="js/antclasses.js?v=final-perf"></script>
+<script src="js/rivals.js?v=final-perf"></script>
+<script src="js/royalchamber.js?v=final-perf"></script>
+<script src="js/scouts.js?v=final-perf"></script>
+<script src="js/buildings.js?v=final-perf"></script>
+<script src="js/research.js?v=final-perf"></script>
+<script src="js/bosses.js?v=final-perf"></script>
 <script src="js/main.js?v=final-perf"></script>
 <script src="js/camera.js?v=final-perf"></script>
 <script src="js/chambers.js?v=final-perf"></script>
@@ -976,6 +989,10 @@ canvas { display: block; }
       return;
     }
 
+    // Initialize new systems before showing menu
+    initResearch();
+    initGoals();
+
     // Always show main menu first, never auto-load
     showMainMenu();
 
@@ -985,4 +1002,4 @@ canvas { display: block; }
   })();
 </script>
 </body>
-     </html>
+   </html>
