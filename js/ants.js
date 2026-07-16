@@ -74,7 +74,6 @@ function setLabelText(lb, text) {
   ctx.fillText(text, 64, 20);
   lb.texture.needsUpdate = true;
 }
-// undergroundOnly param: if true, label only shows when camera is underground
 function addLabel(parent, text, yOff, undergroundOnly) {
   var l = createLabelSprite(text);
   l.sprite.position.set(0, yOff, 0);
@@ -89,7 +88,7 @@ function initQueen() {
   qMesh = buildAntMesh(queenScale, 0x8a4a1a);
   qMesh.position.set(TX, NP.y, CZ);
   scene.add(qMesh);
-  addLabel(qMesh, "👑 Queen", 1.3, true);  // underground label
+  addLabel(qMesh, "👑 Queen", 1.3, true);
   qMesh.userData = { idleTime: 0, isQueen: true };
 }
 initQueen();
@@ -246,7 +245,7 @@ function updateWorker(w, dt) {
   }
   if (w.avoidTimer > 0) { w.avoidTimer -= dt; return; }
 
-  // Boss avoidance – only flee if boss is very close AND worker is not near nest
+  // Boss avoidance – only flee if far from nest
   var distToEntrance = w.mesh.position.distanceTo(ER);
   if (distToEntrance > 3.0 && isBossNearby(w, BAL.workerFleeRange * 2)) {
     w.avoidTimer = 0.5;
@@ -261,7 +260,7 @@ function updateWorker(w, dt) {
   }
 
   // Soldier avoidance – completely ignored when near nest or carrying food home
-  if (!(distToEntrance < 3.0 && (w.state === "TO_NEST" || w.carrying))) {
+  if (!(distToEntrance < 2.5 && (w.state === "TO_NEST" || w.carrying))) {
     if (avoidSoldiers(w)) return;
   }
 
@@ -396,6 +395,7 @@ function updateQueenIdle(dt) {
 }
 function avoidSoldiers(w) {
   if (w.isSoldier || w.isScout) return false;
+  // Always allow passage when very close to nest entrance
   if (w.mesh.position.distanceTo(ER) < 2.5) return false;
   for (var i = 0; i < soldiers.length; i++) {
     if (w.mesh && w.mesh.position.distanceTo(soldiers[i].mesh.position) < 0.7) {
@@ -430,14 +430,15 @@ function spawnSoldier(chX) {
   var mesh = buildAntMesh(1.8, 0x3a1a0a, 1.5);
   mesh.position.copy(ER);
   scene.add(mesh);
-  addLabel(mesh, "🛡️ Soldier Lv" + (state.upgrades.soldierDamage + 1), 1.1, false); // surface label
+  addLabel(mesh, "🛡️ Soldier Lv" + (state.upgrades.soldierDamage + 1), 1.1, false);
   var hb = createHealthBar(mesh, 60, 8, 1.2);
   var mh = getEffectiveSoldierMaxHealth();
   var soldier = {
     mesh: mesh, health: mh, maxHealth: mh, healthBar: hb,
     patrolIndex: 0, target: PATROL_POINTS[0].clone(), speed: 0.9 + Math.random() * 0.3,
     waitTimer: 0, isSoldier: true, attackCooldown: 0, lastCombatTime: 0,
-    guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1
+    guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1,
+    _stuckTimer: 0
   };
   var gm = buildAntMesh(1.5, 0x3a1a0a, 1.3);
   gm.position.set(chX, CCFY + 0.05, CZ);
@@ -486,14 +487,46 @@ function updateSoldier(s, dt) {
   }
   if (s.waitTimer > 0) { s.waitTimer -= dt; return; }
 
+  // Push away from nest entrance if stuck
+  var distToNest = s.mesh.position.distanceTo(ER);
+  if (distToNest < 1.8) {
+    s._stuckTimer = (s._stuckTimer || 0) + dt;
+    if (s._stuckTimer > 2.0) {
+      var pushDir = new THREE.Vector3().subVectors(s.mesh.position, ER).normalize();
+      if (pushDir.length() < 0.01) pushDir.set(1, 0, 0);
+      s.mesh.position.x += pushDir.x * dt * 0.8;
+      s.mesh.position.z += pushDir.z * dt * 0.8;
+      s._stuckTimer = 0;
+    }
+  } else {
+    s._stuckTimer = 0;
+  }
+
+  // AGGRESSIVE BOSS PURSUIT – overrides everything when boss is nearby
+  if (state.bossActive && state.currentBoss) {
+    var bPos = state.currentBoss.mesh.position;
+    var bDist = s.mesh.position.distanceTo(bPos);
+    if (bDist < 8.0) {
+      // rush toward boss
+      var bdx = bPos.x - s.mesh.position.x, bdz = bPos.z - s.mesh.position.z;
+      var bDist2 = Math.sqrt(bdx * bdx + bdz * bdz);
+      if (bDist2 > 1.2) {
+        var bstep = Math.min(s.speed * 1.5 * dt, bDist2);
+        s.mesh.position.x += (bdx / bDist2) * bstep;
+        s.mesh.position.z += (bdz / bDist2) * bstep;
+        s.mesh.rotation.y = Math.atan2(bdx, bdz);
+        s.mesh.position.y = GTY;
+        s.waitTimer = 0; // don't wait when boss is near
+        return;
+      }
+    }
+  }
+
+  // Normal enemy pursuit
   var ne = null, nd = 4.0;
   for (var i = 0; i < enemies.length; i++) {
     var d = s.mesh.position.distanceTo(enemies[i].mesh.position);
     if (d < nd) { nd = d; ne = enemies[i]; }
-  }
-  if (state.bossActive && state.currentBoss) {
-    var bd = s.mesh.position.distanceTo(state.currentBoss.mesh.position);
-    if (bd < nd) { ne = null; }
   }
   if (ne) {
     var p = s.mesh.position, e = ne.mesh.position;
@@ -506,18 +539,8 @@ function updateSoldier(s, dt) {
     }
     return;
   }
-  if (state.bossActive && state.currentBoss) {
-    var bp = s.mesh.position, be = state.currentBoss.mesh.position;
-    var bdx = be.x - bp.x, bdy = be.y - bp.y, bdz = be.z - bp.z;
-    var bdist = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz);
-    if (bdist < 6.0) {
-      var bstep = Math.min(s.speed * 1.2 * dt, bdist);
-      bp.x += (bdx / bdist) * bstep; bp.y += (bdy / bdist) * bstep; bp.z += (bdz / bdist) * bstep;
-      s.mesh.rotation.y = Math.atan2(bdx, bdz);
-      return;
-    }
-  }
-  // Patrol on surface only – no push force
+
+  // Patrol on surface
   var tgt = s.target;
   var dx = tgt.x - s.mesh.position.x, dz = tgt.z - s.mesh.position.z;
   var dist = Math.sqrt(dx * dx + dz * dz);
@@ -544,7 +567,7 @@ function spawnScout() {
   var mesh = buildAntMesh(SCOUT_SCALE, 0x8a7a4a, 1.0);
   mesh.position.copy(ER);
   scene.add(mesh);
-  addLabel(mesh, "🔍 Scout", 0.9, false); // surface label
+  addLabel(mesh, "🔍 Scout", 0.9, false);
   var scout = { mesh: mesh, state: "GOING", target: null, carryingResource: false };
   scouts.push(scout);
   return scout;
@@ -693,4 +716,4 @@ function isBossNearby(w, range) {
   if (!state.bossActive || !state.currentBoss || !state.currentBoss.mesh) return false;
   if (!w.mesh) return false;
   return w.mesh.position.distanceTo(state.currentBoss.mesh.position) < range;
-                    }
+          }
