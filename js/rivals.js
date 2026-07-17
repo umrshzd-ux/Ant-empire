@@ -2,6 +2,10 @@
 // Periodic scripted events where enemy ant colonies attack.
 // Difficulty scales with player level. Victory rewards resources.
 // Defeat means losing food.
+// REQUIRED INTEGRATION: In main.js game loop, add:
+//   updateRivalScheduler(dt);  (alongside other rival calls)
+// In main.js initGameSystems, add:
+//   initRivalSystem();
 
 var RIVAL_TYPES = {
   // ---- Tier 1: Weak rival (early game) ----
@@ -99,7 +103,9 @@ var rivalState = {
   enemiesRemaining: 0,
   enemiesSpawned: 0,
   totalEnemies: 0,
-  victoryProcessed: false
+  victoryProcessed: false,
+  invasionCooldown: 300, // seconds between possible invasions
+  cooldownTimer: 300      // initial cooldown
 };
 
 // ---- Pick a rival based on player level ----
@@ -114,15 +120,34 @@ function pickRivalType() {
   if (available.length === 0) return "scouts";
   // Weight toward higher tiers as level increases
   var highestTier = available[available.length - 1];
-  var randomIndex = Math.floor(Math.random() * available.length);
   // 60% chance of picking the highest available tier
-  return Math.random() < 0.6 ? highestTier : available[randomIndex];
+  return Math.random() < 0.6 ? highestTier : available[Math.floor(Math.random() * available.length)];
+}
+
+// ---- Scheduler: should be called every frame from main.js ----
+function updateRivalScheduler(dt) {
+  // Only schedule if no rival activity and player is at least level 3
+  if (rivalState.active || rivalState.warningActive) return;
+  if (state.level < 3) return;
+
+  rivalState.cooldownTimer -= dt;
+  if (rivalState.cooldownTimer <= 0) {
+    triggerRivalInvasion();
+    rivalState.cooldownTimer = rivalState.invasionCooldown + Math.random() * 180; // 5-8 minutes
+  }
+}
+
+// ---- Initialize rival system (call from initGameSystems) ----
+function initRivalSystem() {
+  rivalState.cooldownTimer = rivalState.invasionCooldown;
+  rivalState.active = false;
+  rivalState.warningActive = false;
 }
 
 // ---- Start a rival invasion warning ----
 function triggerRivalInvasion() {
   if (rivalState.active || rivalState.warningActive) return;
-  if (state.level < 3) return; // no rivals before level 3
+  if (state.level < 3) return;
 
   var rivalKey = pickRivalType();
   var rival = RIVAL_TYPES[rivalKey];
@@ -140,17 +165,17 @@ function triggerRivalInvasion() {
   AudioManager.sfx.waveIncoming();
 
   // Show warning on HUD
-  updateRivalWarning();
+  updateRivalWarningUI();
 }
 
-// ---- Update rival warning timer ----
+// ---- Update rival warning timer (called from main.js) ----
 function updateRivalWarning(dt) {
   if (!rivalState.warningActive) return;
 
   rivalState.warningTimer -= dt;
 
   // Update HUD warning
-  updateRivalWarning();
+  updateRivalWarningUI();
 
   if (rivalState.warningTimer <= 0) {
     // Start the invasion
@@ -159,7 +184,7 @@ function updateRivalWarning(dt) {
 }
 
 // ---- Display rival warning on HUD ----
-function updateRivalWarning() {
+function updateRivalWarningUI() {
   var el = document.getElementById('rival-warning');
   if (!rivalState.warningActive) {
     if (el) el.style.display = 'none';
@@ -169,7 +194,7 @@ function updateRivalWarning() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'rival-warning';
-    el.style.cssText = 'position:absolute; top:130px; left:50%; transform:translateX(-50%); z-index:30; padding:8px 16px; background:rgba(200,50,50,0.9); border:2px solid #ff4444; border-radius:12px; color:#fff; font-weight:700; font-size:14px; pointer-events:none;';
+    el.style.cssText = 'position:fixed; top:150px; left:50%; transform:translateX(-50%); z-index:120; padding:8px 16px; background:rgba(200,50,50,0.9); border:2px solid #ff4444; border-radius:12px; color:#fff; font-weight:700; font-size:14px; pointer-events:none;';
     document.body.appendChild(el);
   }
 
@@ -286,7 +311,7 @@ function createRivalAnt(rival) {
   return enemy;
 }
 
-// ---- Process rival invasion progress ----
+// ---- Process rival invasion progress (called from main.js) ----
 function updateRivalInvasion(dt) {
   if (!rivalState.active) return;
 
@@ -302,7 +327,7 @@ function updateRivalInvasion(dt) {
     }
   }
 
-  // Check if too much time has passed (defeat)
+  // Timeout after 120 seconds
   if (rivalState.active && !rivalState.victoryProcessed) {
     rivalState._totalTime = (rivalState._totalTime || 0) + dt;
     if (rivalState._totalTime > 120) {
@@ -340,10 +365,6 @@ function resolveRivalInvasion(victory) {
     triggerShake(4, 0.5);
   }
 
-  // Reset for next invasion (long cooldown)
-  setTimeout(function() {
-    rivalState.warningActive = false;
-    rivalState.active = false;
-    rivalState.victoryProcessed = false;
-  }, 300000); // 5 minutes between invasions
-}
+  // Reset cooldown for next invasion
+  rivalState.cooldownTimer = rivalState.invasionCooldown + Math.random() * 180;
+      }
