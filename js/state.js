@@ -249,6 +249,8 @@ function recalculateFoodCap() {
   state.foodCap = BAL.baseFoodCap + state.chambers.foodStorage.bonusCap + state.upgrades.foodCap * UPGRADES.foodCap.effect + (state.level - 1) * 25 + (state.prestigeUpgrades.ppCap || 0) * 50;
   if (state.gemUpgrades.deepStorage) state.foodCap += 300;
   if (state.researchBonuses && state.researchBonuses.foodCap) state.foodCap += state.researchBonuses.foodCap;
+  // Zone exploration bonus: +30 per unlocked zone
+  if (state.unlockedZonesList) state.foodCap += state.unlockedZonesList.length * 30;
 }
 function getUpgradeCost(type) {
   var upg = UPGRADES[type];
@@ -443,4 +445,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-    }
+  }
