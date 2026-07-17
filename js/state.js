@@ -109,6 +109,7 @@ var state = {
     zoneTripReduction: 0,
     eggLayReduction: 0,
     scoutSpeed: 0,
+    foodCap: 0,
     poisonResist: false,
     queensWrathUnlocked: false,
     pheromoneShieldUnlocked: false
@@ -190,7 +191,7 @@ function resetStateToDefault(slot) {
   // New systems reset
   state.researchBonuses = {
     foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0,
-    zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0,
+    zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0,
     poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false
   };
   state.completedResearch = [];
@@ -247,6 +248,7 @@ function updateEggLayTime() {
 function recalculateFoodCap() {
   state.foodCap = BAL.baseFoodCap + state.chambers.foodStorage.bonusCap + state.upgrades.foodCap * UPGRADES.foodCap.effect + (state.level - 1) * 25 + (state.prestigeUpgrades.ppCap || 0) * 50;
   if (state.gemUpgrades.deepStorage) state.foodCap += 300;
+  if (state.researchBonuses && state.researchBonuses.foodCap) state.foodCap += state.researchBonuses.foodCap;
 }
 function getUpgradeCost(type) {
   var upg = UPGRADES[type];
@@ -441,4 +443,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-  }
+    }
