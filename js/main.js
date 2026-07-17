@@ -387,10 +387,11 @@ function startGameLoop() {
 
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
-      // Build Queue processing
+      // Build Queue processing (with Builder class bonus)
       if (state.buildQueue.length > 0) {
         var currentBuild = state.buildQueue[0];
-        currentBuild.timeRemaining -= dt;
+        var buildSpeed = 1 + (typeof getBuilderBuildSpeedBonus === 'function' ? getBuilderBuildSpeedBonus() : 0);
+        currentBuild.timeRemaining -= dt * buildSpeed;
         if (currentBuild.timeRemaining <= 0) {
           constructBuilding(currentBuild.type);
           state.buildQueue.shift();
@@ -754,6 +755,7 @@ function initGameSystems() {
   if (typeof initRoyalChamber === 'function') initRoyalChamber();
   if (typeof initResearch === 'function') initResearch();
   if (typeof initRivalSystem === 'function') initRivalSystem();
+  if (typeof initAntClasses === 'function') initAntClasses();
   gameSystemsReady = true;
 
   var bossName = document.getElementById('boss-name');
