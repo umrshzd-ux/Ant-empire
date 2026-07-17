@@ -1,6 +1,7 @@
 // ===== SCOUT SYSTEM – EXPLORATION & DISCOVERIES =====
 // Scouts explore the map, trigger discoveries, and unlock new zones.
 // This file extracts scout logic from ants.js and adds discovery mechanics.
+// Ant classes integrated.
 
 var scouts = [];
 var SCOUT_SCALE = 1.4;
@@ -20,6 +21,11 @@ function spawnScout() {
     tripsCompleted: 0,
     discoveryBonus: 0
   };
+
+  // ----- Ant Class Integration -----
+  var cls = typeof assignClass === 'function' ? assignClass("scout") : null;
+  if (cls) applyClassBonuses(scout, cls);
+
   scouts.push(scout);
   return scout;
 }
@@ -159,4 +165,4 @@ function clearAllScouts() {
     }
   }
   scouts = [];
-}
+                                               }
