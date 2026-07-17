@@ -1,6 +1,7 @@
 // ===== CENTRALIZED BUILDING SYSTEM =====
 // All building construction, upgrades, costs, and mechanic unlocks.
 // Buildings unlock new gameplay, not just increased numbers.
+// Builder class bonus applied in build queue processing.
 
 var BUILDINGS = {
   foodStorage: {
@@ -327,4 +328,14 @@ function isBuildingUnlockActive(feature) {
     }
   }
   return false;
-      }
+}
+
+// ---- Helper: get build speed bonus from Builder class workers ----
+function getBuilderBuildSpeedBonus() {
+  for (var i = 0; i < workers.length; i++) {
+    if (workers[i].antClass === "builder" && workers[i].rendered && !workers[i].isSoldier && !workers[i].isScout) {
+      return 0.25; // 25% faster builds if at least one Builder alive
+    }
+  }
+  return 0;
+}
