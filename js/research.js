@@ -18,7 +18,11 @@ var RESEARCH_TREE = {
       state.researchBonuses.foodPerTrip = (state.researchBonuses.foodPerTrip || 0) + 1;
       showToast("🌾 Efficient Gathering complete! +1 food per trip");
     },
-    prereq: null
+    prereq: null,
+    // Additional condition: must have at least 1 Scout Post built (forces exploration)
+    canResearch: function() {
+      return state.chambers.scout && state.chambers.scout.count >= 1;
+    }
   },
 
   deepStorage: {
@@ -263,6 +267,12 @@ function startResearch(researchId) {
     return false;
   }
 
+  // Check additional condition (e.g. Scout Post for Efficient Gathering)
+  if (tech.canResearch && !tech.canResearch()) {
+    showToast("Build a Scout Post to unlock this research.");
+    return false;
+  }
+
   // Check cost
   if (state.food < tech.cost) {
     showToast("Need " + tech.cost + " food for " + tech.name);
@@ -304,6 +314,7 @@ function canStartResearch(researchId) {
   if (!tech) return false;
   if (state.completedResearch.indexOf(researchId) !== -1) return false;
   if (tech.prereq && state.completedResearch.indexOf(tech.prereq) === -1) return false;
+  if (tech.canResearch && !tech.canResearch()) return false;
   if (state.food < tech.cost) return false;
   return true;
 }
@@ -338,7 +349,8 @@ function refreshResearchUI() {
       } else if (available) {
         html += '<button onclick="startResearch(\'' + id + '\')">' + tech.cost + '🌾</button>';
       } else {
-        html += '<span style="color:#888;">' + (tech.prereq ? 'Locked' : tech.cost + '🌾') + '</span>';
+        var reason = tech.prereq ? 'Locked' : (tech.canResearch ? 'Need Scout' : tech.cost + '🌾');
+        html += '<span style="color:#888;">' + reason + '</span>';
       }
       html += '</div>';
     }
@@ -367,4 +379,4 @@ function initResearch() {
   if (!state.completedResearch) {
     state.completedResearch = [];
   }
-        }
+}
