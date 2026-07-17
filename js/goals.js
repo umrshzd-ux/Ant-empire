@@ -101,12 +101,15 @@ function refreshGoals() {
 
 // ---- Show goals on the HUD ----
 function updateGoalsDisplay() {
+  // Do NOT show if the game is paused (main menu, loading, etc.)
+  if (typeof gamePaused !== 'undefined' && gamePaused) return;
+
   var container = document.getElementById('goals-panel');
   if (!container) {
     // Create the goals panel if it doesn't exist
     container = document.createElement('div');
     container.id = 'goals-panel';
-    container.style.cssText = 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:100; display:flex; gap:10px; pointer-events:none;';
+    container.style.cssText = 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:100; display:none; gap:10px; pointer-events:none;';
     document.body.appendChild(container);
   }
 
@@ -126,6 +129,7 @@ function updateGoalsDisplay() {
     }
   }
   container.innerHTML = html;
+  container.style.display = 'flex';
 }
 
 // ---- Initialize goals on game start ----
