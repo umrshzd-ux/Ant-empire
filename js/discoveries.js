@@ -193,10 +193,24 @@ var BIOME_DISCOVERIES = {
   mountain: ["crystalFormation", "gemShard", "bossLair", "treasureChamber", "ancientFossil"]
 };
 
+// ---- Get base discovery chance for current biome ----
+function getBiomeDiscoveryChance() {
+  // Can be overridden by research, etc.
+  var base = 0.15;
+  if (state.researchBonuses && state.researchBonuses.discoveryChance) {
+    base += state.researchBonuses.discoveryChance;
+  }
+  return base;
+}
+
 // ---- Main function: attempt a discovery when a scout returns ----
 function attemptDiscovery(returnPos) {
-  // Base chance: 35% that something is found
-  if (Math.random() > 0.35) return false;
+  // Base chance that something is found (35% + bonuses)
+  var baseChance = 0.35;
+  if (state.researchBonuses && state.researchBonuses.discoveryChance) {
+    baseChance += state.researchBonuses.discoveryChance;
+  }
+  if (Math.random() > baseChance) return false;
 
   var biome = state.currentZone;
   var available = BIOME_DISCOVERIES[biome] || BIOME_DISCOVERIES["forest"];
