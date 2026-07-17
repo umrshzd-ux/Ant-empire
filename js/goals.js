@@ -70,16 +70,33 @@ function pickGoal(tier) {
 
 // ---- Refresh all goals if they're completed ----
 function refreshGoals() {
+  var changed = false;
+
   if (!activeGoals.immediate || activeGoals.immediate.check()) {
+    if (activeGoals.immediate) {
+      showToast("✅ Goal done: " + activeGoals.immediate.desc);
+    }
     activeGoals.immediate = pickGoal("immediate");
+    changed = true;
   }
   if (!activeGoals.medium || activeGoals.medium.check()) {
+    if (activeGoals.medium) {
+      showToast("🎯 Goal done: " + activeGoals.medium.desc);
+    }
     activeGoals.medium = pickGoal("medium");
+    changed = true;
   }
   if (!activeGoals.longTerm || activeGoals.longTerm.check()) {
+    if (activeGoals.longTerm) {
+      showToast("👑 Goal done: " + activeGoals.longTerm.desc);
+    }
     activeGoals.longTerm = pickGoal("longTerm");
+    changed = true;
   }
-  updateGoalsDisplay();
+
+  if (changed) {
+    updateGoalsDisplay();
+  }
 }
 
 // ---- Show goals on the HUD ----
@@ -89,7 +106,7 @@ function updateGoalsDisplay() {
     // Create the goals panel if it doesn't exist
     container = document.createElement('div');
     container.id = 'goals-panel';
-    container.style.cssText = 'position:absolute; bottom:100px; left:50%; transform:translateX(-50%); z-index:25; display:flex; gap:8px; pointer-events:none;';
+    container.style.cssText = 'position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:100; display:flex; gap:10px; pointer-events:none;';
     document.body.appendChild(container);
   }
 
@@ -103,8 +120,8 @@ function updateGoalsDisplay() {
   for (var i = 0; i < goals.length; i++) {
     var g = goals[i];
     if (g.goal) {
-      html += '<div class="resource-pill" style="pointer-events:auto; border-color:' + g.color + '; font-size:11px; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' +
-              '<span style="color:' + g.color + '">' + g.label + '</span> ' + g.goal.desc +
+      html += '<div style="display:inline-block; background:rgba(0,0,0,0.75); border:2px solid ' + g.color + '; border-radius:8px; padding:4px 10px; font-size:12px; color:#fff; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:auto;">' +
+              '<span style="color:' + g.color + '; font-weight:bold;">' + g.label + '</span> ' + g.goal.desc +
               '</div>';
     }
   }
@@ -117,4 +134,4 @@ function initGoals() {
   activeGoals.medium = pickGoal("medium");
   activeGoals.longTerm = pickGoal("longTerm");
   updateGoalsDisplay();
-     }
+      }
