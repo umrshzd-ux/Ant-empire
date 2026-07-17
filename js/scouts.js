@@ -50,7 +50,8 @@ function updateScout(s, dt) {
 
       // Visual orb showing scout is carrying something
       var orbColor = 0xffcc00;
-      if (Math.random() < getBiomeDiscoveryChance()) {
+      var discoveryChance = typeof getBiomeDiscoveryChance === 'function' ? getBiomeDiscoveryChance() : 0.15;
+      if (Math.random() < discoveryChance) {
         orbColor = 0xff6600; // orange = potential discovery
       }
       var orb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6),
@@ -124,14 +125,16 @@ function processScoutReturn(s) {
   checkZoneUnlocks();
 
   // ATTEMPT A DISCOVERY
-  var discoveryChance = getBiomeDiscoveryChance();
+  var discoveryChance = typeof getBiomeDiscoveryChance === 'function' ? getBiomeDiscoveryChance() : 0.15;
   // Scout class bonus: +15% discovery chance
   if (s.antClass === "scout") discoveryChance += 0.15;
   // Explorer class bonus: double discovery chance
   if (s.antClass === "explorer") discoveryChance *= 2;
 
   if (Math.random() < discoveryChance) {
-    attemptDiscovery(pos);
+    if (typeof attemptDiscovery === 'function') {
+      attemptDiscovery(pos);
+    }
   }
 }
 
@@ -141,6 +144,7 @@ function getEffectiveScoutSpeed() {
   if (state.evolution.scout >= 1) base += EVOLUTION_TREE.scout.tiers[0].effect.speedBonus;
   if (state.prestigeUpgrades.ppSpeed) base *= 1 + state.prestigeUpgrades.ppSpeed * 0.1;
   if (state.ascensionUpgrades.goldenQueen > 0) base *= 2;
+  if (state.researchBonuses && state.researchBonuses.scoutSpeed) base += state.researchBonuses.scoutSpeed;
   return base;
 }
 
@@ -155,4 +159,4 @@ function clearAllScouts() {
     }
   }
   scouts = [];
-      }
+}
