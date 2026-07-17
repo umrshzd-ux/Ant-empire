@@ -188,7 +188,7 @@ function updateQueenAbilityCooldowns(dt) {
     }
   }
 
-  // Update ability button labels every second for cooldown timers
+  // Update ability button display every second for cooldown timers
   if (Math.floor(Date.now() / 1000) % 1 === 0) {
     updateQueenAbilityButtons();
   }
@@ -208,7 +208,9 @@ function updateQueenAbilityButtons() {
   if (!container) {
     container = document.createElement('div');
     container.id = 'queen-abilities';
-    container.style.cssText = 'position:fixed; top:110px; left:50%; transform:translateX(-50%); z-index:110; display:none; gap:6px; pointer-events:auto;';
+    // Right‑side vertical bar, out of the way
+    container.style.cssText = 'position:fixed; top:50%; right:8px; transform:translateY(-50%);' +
+      'z-index:120; display:none; flex-direction:column; gap:8px; pointer-events:auto;';
     document.body.appendChild(container);
   }
 
@@ -225,13 +227,32 @@ function updateQueenAbilityButtons() {
 
     var cd = queenAbilityCooldowns[abilityIds[i]];
     var onCooldown = cd > 0;
+
+    // Small circular button with emoji, no text, just a tiny cooldown ring
+    var size = 48; // px
+    var bg = onCooldown ? 'rgba(80,80,80,0.85)' : 'rgba(180,120,30,0.85)';
+    var ringColor = onCooldown ? '#888' : '#ffd700';
+    var cdPercent = onCooldown ? (cd / ab.cooldown) : 0; // 1 = full, 0 = ready
+
+    // Use conic gradient for cooldown ring (CSS)
+    var ringStyle = '';
+    if (onCooldown) {
+      var angle = 360 * (1 - cdPercent);
+      ringStyle = 'background: conic-gradient(#888 ' + angle.toFixed(0) + 'deg, transparent 0);';
+    }
+
     html += '<button onclick="useQueenAbility(\'' + abilityIds[i] + '\')" ' +
-            'style="padding:6px 10px; border-radius:10px; border:1px solid #ffd700; background:' +
-            (onCooldown ? 'rgba(100,100,100,0.7)' : 'rgba(180,120,30,0.8)') +
-            '; color:#fff; font-size:11px; cursor:pointer; white-space:nowrap;"' +
-            (onCooldown ? ' disabled' : '') + '>' +
-            ab.emoji + ' ' + ab.name +
-            (onCooldown ? ' (' + Math.ceil(cd) + 's)' : '') +
+            'style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; border:2px solid ' + ringColor + ';' +
+            'background: ' + bg + '; color:#fff; font-size:22px; cursor:pointer;' +
+            'display:flex; align-items:center; justify-content:center;' +
+            'box-shadow:0 4px 10px rgba(0,0,0,0.5);' +
+            (onCooldown ? ' position:relative; overflow:hidden;' : '') +
+            '"' +
+            (onCooldown ? ' disabled' : '') +
+            ' title="' + ab.name + (onCooldown ? ' (' + Math.ceil(cd) + 's)' : '') + '"' +
+            '>' +
+            ab.emoji +
+            (onCooldown ? '<span style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%;' + ringStyle + '"></span>' : '') +
             '</button>';
   }
   container.innerHTML = html;
@@ -242,4 +263,4 @@ function initRoyalChamber() {
   if (state.chambers.royal && state.chambers.royal.count > 0) {
     updateQueenAbilityButtons();
   }
-}
+    }
