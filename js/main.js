@@ -518,6 +518,7 @@ function startGameLoop() {
     try {
       updateRivalWarning(dt);
       updateRivalInvasion(dt);
+      if (typeof updateRivalScheduler === 'function') updateRivalScheduler(dt);
     } catch(e) { console.error('Rival error:', e); }
 
     // ---- Queen abilities ----
@@ -752,6 +753,7 @@ function initGameSystems() {
   if (typeof initGoals === 'function') initGoals();
   if (typeof initRoyalChamber === 'function') initRoyalChamber();
   if (typeof initResearch === 'function') initResearch();
+  if (typeof initRivalSystem === 'function') initRivalSystem();
   gameSystemsReady = true;
 
   var bossName = document.getElementById('boss-name');
