@@ -1,5 +1,6 @@
 // ===== ANT MODEL, WORKERS, SOLDIERS, QUEEN, EGGS =====
 // Scouts have been moved to scouts.js
+// Ant classes integrated via antclasses.js (assignClass, applyClassBonuses)
 
 var NEST_SAFE_RADIUS = 6.0;
 
@@ -66,6 +67,11 @@ function createWorker(golden, rareType, forceRender) {
   var baseSpeed = getEffectiveWorkerSpeed(); var speedMult = 1; if (golden) speedMult = 2; if (rareType) speedMult = 1 + rareType.speedBonus;
   var w = { id: id, mesh: mesh, station: st, slotIndex: null, state: "TO_FOOD", path: pathToStation(st), pathIndex: 0, speed: baseSpeed * speedMult + Math.random() * 0.4, waitTimer: Math.random() * 1.5, carrying: false, foodIcon: null, eggIcon: null, targetScale: ws, rendered: true, personalOffset: (Math.random() - 0.5) * 0.6, isSoldier: false, isScout: false, carryingEgg: false, avoidTimer: 0, isGolden: golden || false, isRare: !!rareType, rareType: rareType, foodBonus: rareType ? rareType.foodBonus : 0, _speedMult: speedMult };
   if (state.rallyActive) w.speed *= BAL.rallySpeedMultiplier;
+
+  // ----- Ant Class Integration -----
+  var cls = typeof assignClass === 'function' ? assignClass("worker") : null;
+  if (cls) applyClassBonuses(w, cls);
+
   return w;
 }
 function setPathTarget(w, d) { w.path = d === "FOOD" ? pathToStation(w.station) : pathToNest(w.station); w.pathIndex = 0; }
@@ -114,7 +120,28 @@ function avoidSoldiers(w) { if (w.isSoldier || w.isScout) return false; if (w.me
 var soldiers = [];
 function createHealthBar(parent, w, h, yOff) { var c = document.createElement("canvas"); c.width = w; c.height = h; var tx = new THREE.CanvasTexture(c); var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false })); sp.position.set(0, yOff, 0); sp.scale.set(w / 50, h / 50, 1); parent.add(sp); return { sprite: sp, canvas: c, texture: tx }; }
 function updateHealthBar(bar, ratio) { var ctx = bar.canvas.getContext("2d"); ctx.clearRect(0, 0, bar.canvas.width, bar.canvas.height); ctx.fillStyle = "#333"; ctx.fillRect(0, 0, bar.canvas.width, bar.canvas.height); ctx.fillStyle = ratio > 0.5 ? "#4a4" : ratio > 0.25 ? "#aa4" : "#a44"; ctx.fillRect(1, 1, (bar.canvas.width - 2) * Math.max(0, ratio), bar.canvas.height - 2); bar.texture.needsUpdate = true; }
-function spawnSoldier(chX) { var mesh = buildAntMesh(1.8, 0x3a1a0a, 1.5); mesh.position.copy(ER); scene.add(mesh); addLabel(mesh, "🛡️ Soldier Lv" + (state.upgrades.soldierDamage + 1), 1.1, false); var hb = createHealthBar(mesh, 60, 8, 1.2); var mh = getEffectiveSoldierMaxHealth(); var soldier = { mesh: mesh, health: mh, maxHealth: mh, healthBar: hb, patrolIndex: 0, target: PATROL_POINTS[0].clone(), speed: 0.9 + Math.random() * 0.3, waitTimer: 0, isSoldier: true, attackCooldown: 0, lastCombatTime: 0, guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1 }; var gm = buildAntMesh(1.5, 0x3a1a0a, 1.3); gm.position.set(chX, CCFY + 0.05, CZ); gm.rotation.y = Math.PI / 2; scene.add(gm); soldier.guardMesh = gm; barracksSoldiers.push(gm); soldiers.push(soldier); return soldier; }
+function spawnSoldier(chX) {
+  var mesh = buildAntMesh(1.8, 0x3a1a0a, 1.5);
+  mesh.position.copy(ER);
+  scene.add(mesh);
+  addLabel(mesh, "🛡️ Soldier Lv" + (state.upgrades.soldierDamage + 1), 1.1, false);
+  var hb = createHealthBar(mesh, 60, 8, 1.2);
+  var mh = getEffectiveSoldierMaxHealth();
+  var soldier = { mesh: mesh, health: mh, maxHealth: mh, healthBar: hb, patrolIndex: 0, target: PATROL_POINTS[0].clone(), speed: 0.9 + Math.random() * 0.3, waitTimer: 0, isSoldier: true, attackCooldown: 0, lastCombatTime: 0, guardMesh: null, chX: chX, freezeTimer: 0, damageMultiplier: 1 };
+
+  // ----- Ant Class Integration -----
+  var cls = typeof assignClass === 'function' ? assignClass("soldier") : null;
+  if (cls) applyClassBonuses(soldier, cls);
+
+  var gm = buildAntMesh(1.5, 0x3a1a0a, 1.3);
+  gm.position.set(chX, CCFY + 0.05, CZ);
+  gm.rotation.y = Math.PI / 2;
+  scene.add(gm);
+  soldier.guardMesh = gm;
+  barracksSoldiers.push(gm);
+  soldiers.push(soldier);
+  return soldier;
+}
 function soldierDied(soldier) { var idx = soldiers.indexOf(soldier); if (idx >= 0) { if (soldier.guardMesh) { disposeMesh(soldier.guardMesh); scene.remove(soldier.guardMesh); var gi = barracksSoldiers.indexOf(soldier.guardMesh); if (gi >= 0) barracksSoldiers.splice(gi, 1); } disposeMesh(soldier.mesh); scene.remove(soldier.mesh); soldiers.splice(idx, 1); } state.soldierCount--; state.deadSoldiers++; state.soldierRespawnTimer = BAL.soldierRespawnTime; showToast("💀 Soldier fallen!"); if (state.bossActive && soldiers.length === 0) { resolveBossFight("defeat"); } }
 function respawnSoldier() { state.soldierCount++; state.deadSoldiers--; var chX = BAL.soldierRowStart + TX + 5 + (state.chambers.soldier.count - 1) * 3.5; spawnSoldier(chX); showToast("🛡️ Soldier respawned!"); }
 function updateSoldier(s, dt) {
@@ -140,7 +167,11 @@ function spawnHatchSparkles(pos) { var g = new THREE.Group(); var m = new THREE.
 function hatchEgg(egg, i) {
   var hp = egg.mesh.position.clone(); disposeMesh(egg.mesh); scene.remove(egg.mesh); eggMs.splice(i, 1); state.eggs = Math.max(0, state.eggs - 1); state.workerCount++; state.totalHatched++; state.lifetimeStats.totalHatched++; updateEggLayTime();
   var rt = null; if (Math.random() < 0.08) { rt = RARE_TYPES[Math.floor(Math.random() * RARE_TYPES.length)]; state.rareAntCount++; updateDailyProgress('rare1', 1); }
-  var nw = createWorker(false, rt); if (nw) { nw.mesh.position.copy(hp); nw.mesh.scale.setScalar(0.05); nw.birthTimer = 0.5; nw.birthDuration = 0.5; nw.waitTimer = 0.5; if (state.rallyActive) nw.speed *= BAL.rallySpeedMultiplier; spawnHatchSparkles(hp); workers.push(nw); AudioManager.sfx.hatch(); } else { state.virtualWorkers++; }
+  var nw = createWorker(false, rt); if (nw) {
+    nw.mesh.position.copy(hp); nw.mesh.scale.setScalar(0.05); nw.birthTimer = 0.5; nw.birthDuration = 0.5; nw.waitTimer = 0.5;
+    if (state.rallyActive) nw.speed *= BAL.rallySpeedMultiplier;
+    spawnHatchSparkles(hp); workers.push(nw); AudioManager.sfx.hatch();
+  } else { state.virtualWorkers++; }
   updateNurseryClusters(); updateDailyProgress('hatch5', 1); if (rt) showToast(rt.emoji + " Rare " + rt.name + " hatched!"); checkAchievements(); pTH();
 }
 
