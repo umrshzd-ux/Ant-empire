@@ -182,12 +182,6 @@ function getBiomeEnemyMult() {
   return cfg ? cfg.enemyMult : 1;
 }
 
-// ---- Helper: get discovery chance for current biome ----
-function getBiomeDiscoveryChance() {
-  var cfg = getCurrentBiomeConfig();
-  return cfg ? cfg.discoveryChance : 0.35;
-}
-
 // ---- Biome transition effect (called when switching zones) ----
 function applyBiomeTransition(zoneId) {
   var cfg = BIOME_CONTENT[zoneId];
@@ -227,4 +221,4 @@ function updateBiomeVisuals(zoneId) {
 
   // Show biome description as a toast
   showToast(cfg.label + " – " + cfg.description);
-  }
+}
