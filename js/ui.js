@@ -1,4 +1,11 @@
 // ===== HUD, TOASTS, FLOATERS, MENUS, ACHIEVEMENTS, DAILY, STATS, PRESTIGE/ASCENSION UI =====
+// Safeguard: ensure critical global arrays exist before anything else
+if (typeof workers === 'undefined') var workers = [];
+if (typeof soldiers === 'undefined') var soldiers = [];
+if (typeof scouts === 'undefined') var scouts = [];
+if (typeof enemies === 'undefined') var enemies = [];
+if (typeof eggMs === 'undefined') var eggMs = [];
+if (typeof hatchFx === 'undefined') var hatchFx = [];
 
 var elFood, elFoodCap, elGems, elAnts, elAlertCount;
 var elAlertsPanel, elAlertsContent, elResourcesPanel;
@@ -390,7 +397,7 @@ function checkAchReq(ach, req) {
     case "pacifist": return state.level >= 30 && state.chambers.soldier.count === 0;
     case "queenclick": return state.queenClicks >= req;
     case "weathervet": return state.survivedNight >= 10 && (state.lifetimeStats.totalNights || 0) >= 10;
-    case "golden": var gc = 0; for (var j = 0; j < workers.length; j++) if (workers[j].isGolden) gc++; return gc >= req;
+    case "golden": var gc = 0; if (typeof workers !== 'undefined') for (var j = 0; j < workers.length; j++) if (workers[j].isGolden) gc++; return gc >= req;
     case "beetle": return state.beetleKills >= req;
     case "wasp": return state.waspKills >= req;
     case "cave": return state.caveBossKills >= req;
@@ -433,7 +440,7 @@ function getAchProgress(ach) {
     case "pacifist": return state.level >= 30 && state.chambers.soldier.count === 0 ? 1 : Math.min(1, state.level / 30);
     case "queenclick": current = state.queenClicks; break;
     case "weathervet": current = Math.min(state.survivedNight / 10, 1); break;
-    case "golden": var gc = 0; for (var j = 0; j < workers.length; j++) if (workers[j].isGolden) gc++; current = gc; break;
+    case "golden": var gc = 0; if (typeof workers !== 'undefined') for (var j = 0; j < workers.length; j++) if (workers[j].isGolden) gc++; current = gc; break;
     case "beetle": current = state.beetleKills; break;
     case "wasp": current = state.waspKills; break;
     case "cave": current = state.caveBossKills; break;
@@ -619,6 +626,8 @@ function performPrestige(ppGain) {
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime; state.prestigeGoal = null; state.prestigeGoalSelected = false; state.buildQueue = [];
+  if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
+  if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
   emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 40, 0xff44ff, 0.1, 2.0, 1.0);
   showToast("✨ Prestige complete! Gained " + ppGain + " PP"); refreshHUD(); checkAchievements(); saveGame();
 }
@@ -663,6 +672,8 @@ function performAscension(apGain) {
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
+  if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
+  if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
   AudioManager.sfx.ascend(); emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 60, 0xffaa00, 0.12, 2.5, 1.2);
   showToast("⬆️ Ascension complete! +1 AP, permanent multipliers active!"); refreshHUD(); checkAchievements(); saveGame();
   var cfg = ZONE_CONFIG.forest; scene.background = new THREE.Color(cfg.bg); scene.fog = new THREE.Fog(cfg.fog, 20, 80);
@@ -828,4 +839,4 @@ function setupButtons() {
 
   for (var i = 0; i < allShopIds.length; i++) { var id = allShopIds[i]; if (GEM_ITEMS[id].oneTime && state.gemUpgrades[id]) { var btn = document.getElementById("btn-shop-" + id); if (btn) { btn.disabled = true; btn.textContent = "Owned"; } } }
   refreshUpgradeUI(); refreshAscensionShopUI();
-        }
+  }
