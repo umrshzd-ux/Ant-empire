@@ -1,11 +1,24 @@
 // ===== HUD, TOASTS, FLOATERS, MENUS, ACHIEVEMENTS, DAILY, STATS, PRESTIGE/ASCENSION UI =====
-// Safety guards – ensure all global arrays exist before anything else
+// Ensure all global arrays exist before anything else
 var workers = typeof workers !== 'undefined' ? workers : [];
 var soldiers = typeof soldiers !== 'undefined' ? soldiers : [];
 var scouts = typeof scouts !== 'undefined' ? scouts : [];
 var eggMs = typeof eggMs !== 'undefined' ? eggMs : [];
 var hatchFx = typeof hatchFx !== 'undefined' ? hatchFx : [];
 var enemies = typeof enemies !== 'undefined' ? enemies : [];
+var storageChambers = typeof storageChambers !== 'undefined' ? storageChambers : [];
+var nurseryChambers = typeof nurseryChambers !== 'undefined' ? nurseryChambers : [];
+var soldierChambers = typeof soldierChambers !== 'undefined' ? soldierChambers : [];
+var researchChambers = typeof researchChambers !== 'undefined' ? researchChambers : [];
+var scoutChambers = typeof scoutChambers !== 'undefined' ? scoutChambers : [];
+var storagePiles = typeof storagePiles !== 'undefined' ? storagePiles : [];
+var nurseryEggClusters = typeof nurseryEggClusters !== 'undefined' ? nurseryEggClusters : [];
+var barracksSoldiers = typeof barracksSoldiers !== 'undefined' ? barracksSoldiers : [];
+var researchChamberGroup = typeof researchChamberGroup !== 'undefined' ? researchChamberGroup : null;
+var mushroomMeshes = typeof mushroomMeshes !== 'undefined' ? mushroomMeshes : [];
+var mushroomLights = typeof mushroomLights !== 'undefined' ? mushroomLights : [];
+var rainDrops = typeof rainDrops !== 'undefined' ? rainDrops : [];
+var PATROL_POINTS = typeof PATROL_POINTS !== 'undefined' ? PATROL_POINTS : [];
 
 var elFood, elFoodCap, elGems, elAnts, elAlertCount;
 var elAlertsPanel, elAlertsContent, elResourcesPanel;
