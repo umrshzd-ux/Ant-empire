@@ -13,7 +13,6 @@ var ANT_CLASSES = {
     color: 0x8B7355,
     rarity: "common",
     description: "Standard worker. Reliable and efficient.",
-    // Applied to: workers, soldiers, scouts
     validTypes: ["worker"],
     bonuses: {
       speed: 0,
@@ -23,7 +22,7 @@ var ANT_CLASSES = {
       discoveryChance: 0
     },
     ability: null,
-    unlockCondition: function() { return true; }, // always available
+    unlockCondition: function() { return true; },
     weight: 50
   },
 
@@ -67,7 +66,7 @@ var ANT_CLASSES = {
     weight: 35
   },
 
-  // ---- Uncommon classes (unlocked via research/evolution) ----
+  // ---- Uncommon classes (unlocked via research) ----
   builder: {
     id: "builder",
     name: "Builder",
@@ -82,8 +81,8 @@ var ANT_CLASSES = {
       damage: 0,
       health: 0,
       discoveryChance: 0,
-      buildSpeed: 0.25,  // 25% faster build queue processing
-      buildDiscount: 0.10 // 10% cheaper buildings
+      buildSpeed: 0.25,
+      buildDiscount: 0.10
     },
     ability: null,
     unlockCondition: function() {
@@ -99,14 +98,14 @@ var ANT_CLASSES = {
     color: 0x4A8C5C,
     rarity: "uncommon",
     description: "Finds more discoveries and explores faster.",
-    validTypes: ["scout", "worker"], // can be worker explorer too
+    validTypes: ["scout", "worker"],
     bonuses: {
       speed: 0.2,
       foodBonus: 0,
       damage: 0,
       health: 0,
       discoveryChance: 0.10,
-      zoneTripBonus: 1 // +1 extra trip per return
+      zoneTripBonus: 1
     },
     ability: null,
     unlockCondition: function() {
@@ -132,7 +131,7 @@ var ANT_CLASSES = {
     },
     ability: {
       name: "Guardian Strike",
-      cooldown: 30, // seconds
+      cooldown: 30,
       duration: 5,
       description: "Next attack deals 3x damage.",
       activate: function(ant) {
@@ -169,28 +168,23 @@ var ANT_CLASSES = {
     ability: {
       name: "Healing Pulse",
       cooldown: 20,
-      duration: 0, // instant
-      description: "Heal all nearby allies for 10 HP.",
+      duration: 0,
       activate: function(ant) {
         var allAnts = workers.concat(soldiers).concat(scouts);
         var healed = 0;
         for (var i = 0; i < allAnts.length; i++) {
           var a = allAnts[i];
-          if (!a || !a.mesh || !a.health) continue; // only soldiers have health
-          if (a.health && a.maxHealth && a.health < a.maxHealth) {
-            var dist = ant.mesh.position.distanceTo(a.mesh.position);
-            if (dist < 3.0) {
-              a.health = Math.min(a.maxHealth, a.health + 10);
-              if (a.healthBar) updateHealthBar(a.healthBar, a.health / a.maxHealth);
-              healed++;
-            }
+          if (!a || !a.mesh || !a.health) continue;
+          if (a.health < a.maxHealth && ant.mesh.position.distanceTo(a.mesh.position) < 3.0) {
+            a.health = Math.min(a.maxHealth, a.health + 10);
+            if (a.healthBar) updateHealthBar(a.healthBar, a.health / a.maxHealth);
+            healed++;
           }
         }
         if (healed > 0) showToast("💚 Medic healed " + healed + " allies!");
       }
     },
     unlockCondition: function() {
-      // Unlock after 10 bosses or 3 prestiges
       return state.bossKills >= 10 || state.prestigeCount >= 3;
     },
     weight: 5
@@ -198,11 +192,10 @@ var ANT_CLASSES = {
 };
 
 // ---- Ant class cooldowns (for active abilities) ----
-var classAbilityCooldowns = {}; // keyed by ant id
+var classAbilityCooldowns = {};
 
 // ---- Assign a random class to a new ant based on type and unlocks ----
 function assignClass(antType) {
-  // antType: "worker", "soldier", "scout"
   var available = [];
   var totalWeight = 0;
 
@@ -214,7 +207,7 @@ function assignClass(antType) {
     totalWeight += cls.weight;
   }
 
-  if (available.length === 0) return null; // fallback to no special class
+  if (available.length === 0) return null;
 
   var roll = Math.random() * totalWeight;
   var cumulative = 0;
@@ -245,23 +238,15 @@ function applyClassBonuses(ant, cls) {
   if (cls.bonuses.discoveryChance && ant.discoveryBonus !== undefined) {
     ant.discoveryBonus = (ant.discoveryBonus || 0) + cls.bonuses.discoveryChance;
   }
-  // Build bonuses applied in build queue processing (see buildings.js)
-  // Heal aura and zone trip bonus handled in updateClassAbilities
 
   // Visual: change body colour to class colour
   if (ant.mesh && cls.color) {
     ant.mesh.traverse(function(child) {
       if (child.isMesh && child.material && child.material.color &&
-          !child.material.emissive) { // avoid changing eyes etc.
+          !child.material.emissive) {
         child.material.color.setHex(cls.color);
       }
     });
-  }
-
-  // Add class label
-  if (ant.mesh && !ant.isSoldier) { // soldiers already have label
-    // Remove existing non-class label? We'll just prepend class emoji.
-    // In practice, addLabel would be called externally after assignment.
   }
 }
 
@@ -310,14 +295,7 @@ function useClassAbility(ant) {
   return true;
 }
 
-// ---- Get class info for UI display ----
-function getAntClassInfo(ant) {
-  if (!ant || !ant.antClass) return null;
-  return ANT_CLASSES[ant.antClass] || null;
-}
-
 // ---- Initialize class system (called from initGameSystems) ----
 function initAntClasses() {
-  // Ensure cooldowns reset
   classAbilityCooldowns = {};
 }
