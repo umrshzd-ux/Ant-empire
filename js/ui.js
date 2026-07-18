@@ -1,8 +1,12 @@
 // ===== HUD, TOASTS, FLOATERS, MENUS, ACHIEVEMENTS, DAILY, STATS, PRESTIGE/ASCENSION UI =====
+// Safety guards – ensure all global arrays exist before anything else
 var workers = typeof workers !== 'undefined' ? workers : [];
 var soldiers = typeof soldiers !== 'undefined' ? soldiers : [];
 var scouts = typeof scouts !== 'undefined' ? scouts : [];
-// Global element references
+var eggMs = typeof eggMs !== 'undefined' ? eggMs : [];
+var hatchFx = typeof hatchFx !== 'undefined' ? hatchFx : [];
+var enemies = typeof enemies !== 'undefined' ? enemies : [];
+
 var elFood, elFoodCap, elGems, elAnts, elAlertCount;
 var elAlertsPanel, elAlertsContent, elResourcesPanel;
 var elMorePanel;
@@ -39,10 +43,6 @@ function initDOMRefs() {
   rallyBtn = document.getElementById("btn-rally");
   rallyOverlay = rallyBtn ? rallyBtn.querySelector(".cooldown-overlay") : null;
 }
-
-// =============================================
-//  ALL UI FUNCTIONS (toasts, panels, modals, …)
-// =============================================
 
 function closeAllModals() {
   ['offline-modal', 'daily-modal', 'prestige-modal', 'ascend-modal', 'about-modal', 'delete-modal'].forEach(function(id) {
@@ -839,4 +839,4 @@ function setupGameListeners() {
 
   var btnMore = document.getElementById("btn-more");
   if (btnMore) btnMore.onclick = function() { AudioManager.sfx.buttonClick(); toggleMorePanel(); };
-      }
+}
