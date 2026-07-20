@@ -261,4 +261,4 @@ function initRoyalChamber() {
   if (state.chambers.royal && state.chambers.royal.count > 0) {
     updateQueenAbilityButtons();
   }
-    }
+}
