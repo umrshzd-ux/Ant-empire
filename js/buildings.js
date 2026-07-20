@@ -97,7 +97,6 @@ var BUILDINGS = {
     onBuild: function() {
       state.chambers.research.count++;
       showToast("🔬 Research Chamber built! New systems unlocked!");
-      // Show previously hidden buttons
       var btns = ["btn-upgrades", "btn-shop", "btn-achievements", "btn-daily"];
       for (var bi = 0; bi < btns.length; bi++) {
         var b = document.getElementById(btns[bi]);
@@ -242,7 +241,6 @@ function addChamberToArrays(type, x, mesh) {
       break;
     case "research":
       researchChambers.push({ x: x, mesh: mesh });
-      // Create orbiting research orbs
       researchChamberGroup = new THREE.Group();
       researchChamberGroup.position.set(x, CCY + 1.8, CZ);
       var orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 });
@@ -331,8 +329,8 @@ function isBuildingUnlockActive(feature) {
 function getBuilderBuildSpeedBonus() {
   for (var i = 0; i < workers.length; i++) {
     if (workers[i].antClass === "builder" && workers[i].rendered && !workers[i].isSoldier && !workers[i].isScout) {
-      return 0.25; // 25% faster builds if at least one Builder alive
+      return 0.25;
     }
   }
   return 0;
-}
+                                }
