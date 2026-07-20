@@ -78,13 +78,16 @@ function _doSpawnBoss() {
     hbFill.style.background = colorMap[bossKey] || "#cc0000";
   }
 
+  // Boss target offset away from nest entrance so fights don't block workers
+  var bossTarget = ER.clone().add(new THREE.Vector3(3, 0, 2));
+
   state.currentBoss = {
     mesh: bossMesh,
     health: bossHealth,
     maxHealth: bossHealth,
     healthBar: hb,
     speed: BAL[bt.spdKey],
-    target: ER.clone(),
+    target: bossTarget,
     attackCooldown: 0,
     lastAttack: 0,
     bossKey: bossKey,
@@ -339,9 +342,6 @@ function resolveBossFight(outcome) {
   }
   checkAchievements();
 }
-
-// Legacy killBoss – kept for any old callers
-function killBoss() { resolveBossFight("victory"); }
 
 // Summon boss via button
 function summonBoss() {
