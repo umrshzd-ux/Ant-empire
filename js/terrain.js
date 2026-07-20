@@ -29,6 +29,115 @@ var PATROL_POINTS = [
 ];
 
 var mound, rim, collar;
+
+// ===== TERRITORY MARKERS (new) =====
+var territoryMarkers = [];  // { mesh, zoneId, claimed, position }
+
+function createTerritoryMarker(x, z, zoneId) {
+  var group = new THREE.Group();
+  
+  // Pole
+  var poleMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 });
+  var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.2, 6), poleMat);
+  pole.position.y = 0.6;
+  pole.castShadow = true;
+  group.add(pole);
+  
+  // Flag (coloured by zone)
+  var zoneColor = 0x4CAF50; // default green
+  if (ZONE_CONFIG[zoneId]) zoneColor = ZONE_CONFIG[zoneId].bg;
+  var flagMat = new THREE.MeshStandardMaterial({ color: zoneColor, roughness: 0.5, side: THREE.DoubleSide });
+  var flag = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), flagMat);
+  flag.position.set(0.3, 1.0, 0);
+  flag.rotation.y = Math.PI / 4;
+  flag.castShadow = true;
+  group.add(flag);
+  
+  group.position.set(x, GTY + 0.02, z);
+  group.userData = { isTerritoryMarker: true, zoneId: zoneId, claimed: false, markerPos: { x: x, y: GTY, z: z } };
+  scene.add(group);
+  territoryMarkers.push({ mesh: group, zoneId: zoneId, claimed: false, position: new THREE.Vector3(x, GTY, z) });
+  return group;
+}
+
+function initTerritoryMarkers() {
+  // Clear existing markers
+  for (var i = territoryMarkers.length - 1; i >= 0; i--) {
+    disposeMesh(territoryMarkers[i].mesh);
+    scene.remove(territoryMarkers[i].mesh);
+  }
+  territoryMarkers = [];
+  
+  // Place markers based on unlocked zones
+  var zones = state.unlockedZonesList;
+  if (!zones || zones.length === 0) zones = ["forest"];
+  
+  for (var z = 0; z < zones.length; z++) {
+    var zoneId = zones[z];
+    // Generate 4 territory positions per zone (spread across the map)
+    var baseX, baseZ;
+    switch (zoneId) {
+      case "forest":
+        baseX = -5; baseZ = -5;
+        break;
+      case "meadow":
+        baseX = 8; baseZ = -2;
+        break;
+      case "forestEdge":
+        baseX = -12; baseZ = 4;
+        break;
+      case "riverside":
+        baseX = 2; baseZ = 10;
+        break;
+      case "deepWoods":
+        baseX = -8; baseZ = -10;
+        break;
+      case "cave":
+        baseX = 12; baseZ = 6;
+        break;
+      case "swamp":
+        baseX = -14; baseZ = 0;
+        break;
+      case "mountain":
+        baseX = 10; baseZ = -9;
+        break;
+      default:
+        baseX = 0; baseZ = 0;
+    }
+    for (var i = 0; i < 4; i++) {
+      var offsetX = (i % 2 === 0 ? 2 : -2) + Math.random() * 1.5;
+      var offsetZ = (Math.floor(i / 2) === 0 ? 2 : -2) + Math.random() * 1.5;
+      var tx = baseX + offsetX;
+      var tz = baseZ + offsetZ;
+      // Avoid placing too close to the nest
+      if (Math.abs(tx - TX) < 5 && Math.abs(tz - TCZ) < 5) {
+        tx += 3;
+        tz += 3;
+      }
+      createTerritoryMarker(tx, tz, zoneId);
+    }
+  }
+  
+  // Mark any territories already claimed (from save)
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    var claim = state.territoriesClaimed[i];
+    for (var j = 0; j < territoryMarkers.length; j++) {
+      var marker = territoryMarkers[j];
+      if (marker.position.distanceTo(new THREE.Vector3(claim.pos.x, claim.pos.y, claim.pos.z)) < 1.5) {
+        marker.claimed = true;
+        marker.mesh.userData.claimed = true;
+        // Change flag colour to gold
+        marker.mesh.children.forEach(function(child) {
+          if (child.isMesh && child.material.color) {
+            child.material.color.setHex(0xFFD700);
+          }
+        });
+        break;
+      }
+    }
+  }
+}
+
 function buildTerrain() {
   // Simple grass texture
   var c = document.createElement("canvas");
@@ -164,6 +273,9 @@ function buildTerrain() {
     m.position.set(pt.x, GTY + 0.1, pt.z);
     scene.add(m);
   }
+
+  // ===== TERRITORY MARKERS INIT (new) =====
+  initTerritoryMarkers();
 }
 
 // ===== MUSHROOMS (reduced to 3, NO lights) =====
