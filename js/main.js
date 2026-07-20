@@ -238,6 +238,211 @@ window.loadSlot = function(slot) {
   }, 600);
 };
 
+// ===== TERRITORY SYSTEM FUNCTIONS (new) =====
+
+// Claim a territory by marker index
+function claimTerritory(markerIndex) {
+  if (markerIndex < 0 || markerIndex >= territoryMarkers.length) return;
+  var marker = territoryMarkers[markerIndex];
+  if (marker.claimed) {
+    showToast("This territory is already claimed!");
+    return;
+  }
+  var cost = state.territoryUnlockCost;
+  if (state.food < cost) {
+    showToast("Need " + cost + " food to claim this territory!");
+    return;
+  }
+  state.food -= cost;
+  marker.claimed = true;
+  marker.mesh.userData.claimed = true;
+  // Change flag colour to gold
+  marker.mesh.children.forEach(function(child) {
+    if (child.isMesh && child.material.color) {
+      child.material.color.setHex(0xFFD700);
+    }
+  });
+
+  var territoryId = 't_' + Date.now();
+  var newTerritory = {
+    id: territoryId,
+    zone: marker.zoneId,
+    pos: { x: marker.position.x, y: marker.position.y, z: marker.position.z },
+    resourceType: 'food',   // all give food for now
+    level: 1,
+    claimedAt: Date.now(),
+    assignedWorkers: 0,
+    assignedSoldiers: 0
+  };
+  state.territoriesClaimed.push(newTerritory);
+  state.territoryUnlockCost = Math.floor(state.territoryUnlockCost * 1.5); // increase cost for next
+  recalculateFoodCap();
+  emitParticles(marker.position, 10, 0xFFD700, 0.06, 0.8, 0.5);
+  showToast("🏁 Territory claimed! +50 food capacity");
+  refreshHUD();
+  saveGame();
+}
+
+// Show a modal to assign workers/soldiers to a territory
+function showTerritoryAssignPanel(territoryId) {
+  // Find territory
+  var terr = null;
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    if (state.territoriesClaimed[i].id === territoryId) {
+      terr = state.territoriesClaimed[i];
+      break;
+    }
+  }
+  if (!terr) return;
+
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.id = 'territory-assign-modal';
+  var html = '<div class="modal-card"><div class="modal-title">🏁 Territory Management</div>';
+  html += '<div style="color:#f3e3c4;font-size:14px;margin:8px 0;">Zone: ' + terr.zone + ' | Level: ' + terr.level + '</div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;"><span>🐜 Workers: ' + terr.assignedWorkers + '</span>';
+  html += '<button class="modal-btn" style="padding:4px 12px;margin:0 4px;" onclick="adjustTerritoryAssign(\'' + territoryId + '\',\'worker\',-1)">-</button>';
+  html += '<button class="modal-btn" style="padding:4px 12px;margin:0 4px;" onclick="adjustTerritoryAssign(\'' + territoryId + '\',\'worker\',1)">+</button></div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0;"><span>🛡️ Soldiers: ' + terr.assignedSoldiers + '</span>';
+  html += '<button class="modal-btn" style="padding:4px 12px;margin:0 4px;" onclick="adjustTerritoryAssign(\'' + territoryId + '\',\'soldier\',-1)">-</button>';
+  html += '<button class="modal-btn" style="padding:4px 12px;margin:0 4px;" onclick="adjustTerritoryAssign(\'' + territoryId + '\',\'soldier\',1)">+</button></div>';
+  html += '<button class="modal-btn secondary" onclick="document.getElementById(\'territory-assign-modal\').style.display=\'none\'">Close</button></div>';
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+}
+
+window.adjustTerritoryAssign = function(territoryId, type, delta) {
+  var terr = null;
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    if (state.territoriesClaimed[i].id === territoryId) {
+      terr = state.territoriesClaimed[i];
+      break;
+    }
+  }
+  if (!terr) return;
+
+  if (type === 'worker') {
+    var newVal = terr.assignedWorkers + delta;
+    if (newVal < 0) newVal = 0;
+    if (newVal > state.workerCount - getTotalAssignedWorkers(territoryId)) newVal = state.workerCount - getTotalAssignedWorkers(territoryId) + terr.assignedWorkers;
+    terr.assignedWorkers = newVal;
+  } else if (type === 'soldier') {
+    var newVal = terr.assignedSoldiers + delta;
+    if (newVal < 0) newVal = 0;
+    if (newVal > state.soldierCount - getTotalAssignedSoldiers(territoryId)) newVal = state.soldierCount - getTotalAssignedSoldiers(territoryId) + terr.assignedSoldiers;
+    terr.assignedSoldiers = newVal;
+  }
+
+  // Refresh panel
+  var modal = document.getElementById('territory-assign-modal');
+  if (modal) {
+    modal.remove();
+    showTerritoryAssignPanel(territoryId);
+  }
+  refreshHUD();
+  saveGame();
+};
+
+function getTotalAssignedWorkers(excludeId) {
+  var total = 0;
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    if (state.territoriesClaimed[i].id !== excludeId) {
+      total += state.territoriesClaimed[i].assignedWorkers;
+    }
+  }
+  return total;
+}
+function getTotalAssignedSoldiers(excludeId) {
+  var total = 0;
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    if (state.territoriesClaimed[i].id !== excludeId) {
+      total += state.territoriesClaimed[i].assignedSoldiers;
+    }
+  }
+  return total;
+}
+
+// Passive resource generation from territories (called in game loop)
+function updateTerritoryResources(dt) {
+  if (state.territoriesClaimed.length === 0) return;
+  state.territoryPassiveTimer += dt;
+  var tickInterval = 5; // seconds
+  if (state.territoryPassiveTimer >= tickInterval) {
+    state.territoryPassiveTimer -= tickInterval;
+    for (var i = 0; i < state.territoriesClaimed.length; i++) {
+      var terr = state.territoriesClaimed[i];
+      var generation = terr.assignedWorkers * 2; // each worker gives 2 food per tick
+      if (generation > 0) {
+        addFood(generation, null);
+      }
+      // Small chance for gem (1% per assigned soldier)
+      if (terr.assignedSoldiers > 0 && Math.random() < terr.assignedSoldiers * 0.01) {
+        addGems(1);
+      }
+    }
+  }
+}
+
+// Click handler for territory markers (integrated into existing handler)
+renderer.domElement.addEventListener('click', function(e) {
+  if (!qMesh) return;
+  var mouse = new THREE.Vector2();
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check territory markers first
+  var territoryIntersects = raycaster.intersectObjects(territoryMarkers.map(function(m) { return m.mesh; }), true);
+  if (territoryIntersects.length > 0) {
+    var clickedObj = territoryIntersects[0].object;
+    // Traverse up to find the marker group
+    while (clickedObj && !clickedObj.userData.isTerritoryMarker) {
+      clickedObj = clickedObj.parent;
+    }
+    if (clickedObj && clickedObj.userData.isTerritoryMarker) {
+      var markerIndex = -1;
+      for (var i = 0; i < territoryMarkers.length; i++) {
+        if (territoryMarkers[i].mesh === clickedObj) {
+          markerIndex = i;
+          break;
+        }
+      }
+      if (markerIndex >= 0) {
+        if (territoryMarkers[markerIndex].claimed) {
+          // Open assignment panel
+          var terr = null;
+          var markerPos = territoryMarkers[markerIndex].position;
+          for (var j = 0; j < state.territoriesClaimed.length; j++) {
+            var tp = state.territoriesClaimed[j].pos;
+            if (Math.abs(tp.x - markerPos.x) < 1 && Math.abs(tp.z - markerPos.z) < 1) {
+              terr = state.territoriesClaimed[j];
+              break;
+            }
+          }
+          if (terr) {
+            showTerritoryAssignPanel(terr.id);
+          }
+        } else {
+          // Claim territory
+          claimTerritory(markerIndex);
+        }
+      }
+      return; // stop propagation, don't click queen
+    }
+  }
+
+  // Queen click fallback
+  var intersects = raycaster.intersectObject(qMesh, true);
+  if (intersects.length > 0) {
+    state.queenClicks++;
+    emitParticles(_v3.copy(qMesh.position), 5, 0xff44ff, 0.03, 0.5, 0.4);
+    showToast("👑 Queen clicked! (" + state.queenClicks + ")");
+    checkAchievements();
+  }
+});
+
 // Screenshake
 var shakeIntensity = 0, shakeDuration = 0;
 function triggerShake(intensity, duration) { if (!GameSettings.shakeOn) return; shakeIntensity = intensity; shakeDuration = duration; if (typeof AudioManager !== 'undefined') AudioManager.sfx.shake(); }
@@ -727,6 +932,11 @@ function startGameLoop() {
       if (storagePilesDirty && storageUpdateCounter > 30) { storageUpdateCounter = 0; storagePilesDirty = false; updateStoragePiles(); }
     } catch(e) { console.error('Storage piles error:', e); }
 
+    // ---- Territory resources (new) ----
+    try {
+      updateTerritoryResources(dt);
+    } catch(e) { console.error('Territory error:', e); }
+
     // ---- Achievements, rebalance, tutorials ----
     try {
       achCheckAccumulator += dt;
@@ -764,7 +974,7 @@ function startGameLoop() {
 
 function initGameSystems() {
   if (gameSystemsReady) { clearAllMeshes(); gameSystemsReady = false; }
-  buildTerrain();
+  buildTerrain();  // includes initTerritoryMarkers()
   buildQueenChamberWalls();
   initFoodStations();
   initMushrooms();
@@ -833,9 +1043,16 @@ function performPrestige(ppGain) {
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime; state.prestigeGoal = null; state.prestigeGoalSelected = false; state.buildQueue = [];
+  // Reset territory system
+  state.territoriesClaimed = [];
+  state.territoryUnlockCost = 100;
+  state.territoryPassiveTimer = 0;
+  state.territoryScoutQueue = [];
   // Reset first‑time flags
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
+  // Re-init territory markers
+  initTerritoryMarkers();
   emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 40, 0xff44ff, 0.1, 2.0, 1.0);
   showToast("✨ Prestige complete! Gained " + ppGain + " PP"); refreshHUD(); checkAchievements(); saveGame();
 }
@@ -864,6 +1081,11 @@ function performAscension(apGain) {
   state.caveBossKills = 0; state.swampBossKills = 0; state.mountainBossKills = 0; state.buildQueue = []; state.prestigeGoal = null; state.prestigeGoalSelected = false;
   state.eventChoices = []; state.eventChoiceActive = false; state.researchBonuses = { foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0, zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0, poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false };
   state.completedResearch = []; state.queensWrathActive = false; state.queensWrathTimer = 0; state.queenProtected = false; state._royalGroups = [];
+  // Reset territory
+  state.territoriesClaimed = [];
+  state.territoryUnlockCost = 100;
+  state.territoryPassiveTimer = 0;
+  state.territoryScoutQueue = [];
   clearAllMeshes(); buildQueenChamberWalls(); rebuildAllChambers();
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
@@ -871,6 +1093,8 @@ function performAscension(apGain) {
   // Reset first‑time flags
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
+  // Re-init territory markers
+  initTerritoryMarkers();
   AudioManager.sfx.ascend(); emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 60, 0xffaa00, 0.12, 2.5, 1.2);
   showToast("⬆️ Ascension complete! +1 AP, permanent multipliers active!"); refreshHUD(); checkAchievements(); saveGame();
   var cfg = ZONE_CONFIG.forest; scene.background = new THREE.Color(cfg.bg); scene.fog = new THREE.Fog(cfg.fog, 20, 80);
