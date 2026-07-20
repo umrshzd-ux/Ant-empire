@@ -46,18 +46,6 @@ var BAL = {
   foodTensionHatchBoost: 0.2
 };
 
-// Boss tier lookup for defeat penalties
-var BOSS_TIER = {
-  beetle:    1,
-  wasp:      2,
-  centipede: 3,
-  hydra:     4,
-  wyrm:      5
-};
-var BOSS_DEFEAT_PENALTY_BASE = 0.10;   // tier 1 takes 10%
-var BOSS_DEFEAT_PENALTY_STEP = 0.05;   // +5% per tier above 1
-var BOSS_DEFEAT_PENALTY_MAX  = 0.35;   // hard cap
-
 var UPGRADES = {
   soldierDamage: { name: "Soldier Might", baseCost: 120, maxLevel: 10, effect: 4, costMult: 1.8 },
   workerSpeed: { name: "Worker Haste", baseCost: 100, maxLevel: 10, effect: 0.12, costMult: 1.7 },
