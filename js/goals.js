@@ -138,4 +138,4 @@ function initGoals() {
   activeGoals.medium = pickGoal("medium");
   activeGoals.longTerm = pickGoal("longTerm");
   updateGoalsDisplay();
-      }
+}
