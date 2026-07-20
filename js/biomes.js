@@ -1,18 +1,13 @@
 // ===== BIOME SYSTEM – Randomized Content Per Zone =====
 // Each biome has unique spawn tables for food stations, enemies, bosses,
 // and discovery chances. Content randomizes per prestige run.
+//
+// Basic zone properties (name, bg, fog, foodBonus, enemyMult, etc.)
+// are defined in config.js → ZONE_CONFIG to avoid duplication.
 
-var BIOME_CONTENT = {
+// ---- Additional biome data (spawn tables, discovery rates) ----
+var BIOME_EXTRA = {
   forest: {
-    name: "Forest",
-    label: "🌳 Forest",
-    bg: 0x87ceeb,
-    fog: 0x87ceeb,
-    foodBonus: 0,
-    enemyMult: 1,
-    tripReq: 0,
-    prestigeReq: 0,
-    // Spawn tables
     foodStations: [
       { type: "berryBush", count: 2, foodPerTrip: 3 },
       { type: "seedPile", count: 1, foodPerTrip: 4 }
@@ -23,16 +18,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0,
     description: "A temperate forest with abundant food and mild threats."
   },
-
   meadow: {
-    name: "Meadow",
-    label: "🌿 Meadow",
-    bg: 0x7ab44d,
-    fog: 0x7ab44d,
-    foodBonus: 1,
-    enemyMult: 1,
-    tripReq: 15,
-    prestigeReq: 0,
     foodStations: [
       { type: "flowerField", count: 2, foodPerTrip: 4 },
       { type: "honeyDrop", count: 1, foodPerTrip: 5 }
@@ -43,16 +29,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.02,
     description: "Open grasslands rich with flowers and nectar."
   },
-
   forestEdge: {
-    name: "Forest Edge",
-    label: "🌲 Forest Edge",
-    bg: 0x6b8e5a,
-    fog: 0x6b8e5a,
-    foodBonus: 2,
-    enemyMult: 1.2,
-    tripReq: 30,
-    prestigeReq: 0,
     foodStations: [
       { type: "deadWood", count: 2, foodPerTrip: 5 },
       { type: "mushroomPatch", count: 1, foodPerTrip: 6 }
@@ -63,16 +40,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.03,
     description: "The boundary between forest and the unknown."
   },
-
   riverside: {
-    name: "Riverside",
-    label: "🏞️ Riverside",
-    bg: 0x5a8a8a,
-    fog: 0x5a8a8a,
-    foodBonus: 2,
-    enemyMult: 0.8,
-    tripReq: 60,
-    prestigeReq: 0,
     foodStations: [
       { type: "riverbank", count: 2, foodPerTrip: 5 },
       { type: "fishCarcass", count: 1, foodPerTrip: 7 }
@@ -83,16 +51,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.04,
     description: "Fertile riverbanks with rich pickings but seasonal floods."
   },
-
   deepWoods: {
-    name: "Deep Woods",
-    label: "🌲 Deep Woods",
-    bg: 0x2a4a2a,
-    fog: 0x2a4a2a,
-    foodBonus: 3,
-    enemyMult: 1.5,
-    tripReq: 100,
-    prestigeReq: 0,
     foodStations: [
       { type: "ancientLog", count: 2, foodPerTrip: 6 },
       { type: "fungalGarden", count: 1, foodPerTrip: 8 }
@@ -103,16 +62,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.05,
     description: "Dark and dangerous, but full of ancient treasures."
   },
-
   cave: {
-    name: "Cave",
-    label: "🕳️ Cave",
-    bg: 0x334455,
-    fog: 0x334455,
-    foodBonus: 4,
-    enemyMult: 1.6,
-    tripReq: 0,
-    prestigeReq: 10,
     foodStations: [
       { type: "crystalMoss", count: 2, foodPerTrip: 7 },
       { type: "batGuano", count: 1, foodPerTrip: 9 }
@@ -123,16 +73,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.08,
     description: "Deep underground caves with crystals and danger."
   },
-
   swamp: {
-    name: "Swamp",
-    label: "🌿 Swamp",
-    bg: 0x3a5a3a,
-    fog: 0x3a5a3a,
-    foodBonus: 5,
-    enemyMult: 1.3,
-    tripReq: 0,
-    prestigeReq: 25,
     foodStations: [
       { type: "bogPlants", count: 2, foodPerTrip: 8 },
       { type: "insectSwarm", count: 1, foodPerTrip: 10 }
@@ -143,16 +84,7 @@ var BIOME_CONTENT = {
     rareDiscoveryBonus: 0.10,
     description: "A murky swamp where ancient creatures lurk."
   },
-
   mountain: {
-    name: "Mountain",
-    label: "🏔️ Mountain",
-    bg: 0x88aacc,
-    fog: 0x88aacc,
-    foodBonus: 6,
-    enemyMult: 1.9,
-    tripReq: 0,
-    prestigeReq: 50,
     foodStations: [
       { type: "alpineHerbs", count: 2, foodPerTrip: 9 },
       { type: "frozenCarcass", count: 1, foodPerTrip: 12 }
@@ -165,9 +97,9 @@ var BIOME_CONTENT = {
   }
 };
 
-// ---- Helper: get current biome config ----
+// ---- Helper: get current biome config (from ZONE_CONFIG) ----
 function getCurrentBiomeConfig() {
-  return BIOME_CONTENT[state.currentZone] || BIOME_CONTENT["forest"];
+  return ZONE_CONFIG[state.currentZone] || ZONE_CONFIG["forest"];
 }
 
 // ---- Helper: get food bonus for current biome ----
@@ -184,7 +116,7 @@ function getBiomeEnemyMult() {
 
 // ---- Biome transition effect (called when switching zones) ----
 function applyBiomeTransition(zoneId) {
-  var cfg = BIOME_CONTENT[zoneId];
+  var cfg = ZONE_CONFIG[zoneId];
   if (!cfg) return;
 
   // Update scene background and fog
@@ -206,7 +138,7 @@ function updateBiomeVisuals(zoneId) {
   // This is called by applyBiomeTransition.
   // The main terrain rebuild already happens via initGameSystems.
   // Here we can add biome-specific particle colours or lighting tweaks.
-  var cfg = BIOME_CONTENT[zoneId];
+  var cfg = ZONE_CONFIG[zoneId];
   if (!cfg) return;
 
   // Tweak directional light colour based on biome
@@ -220,5 +152,11 @@ function updateBiomeVisuals(zoneId) {
   }
 
   // Show biome description as a toast
-  showToast(cfg.label + " – " + cfg.description);
+  var extra = BIOME_EXTRA[zoneId];
+  showToast(cfg.label + " – " + (extra ? extra.description : ""));
+}
+
+// ---- (Optional) Get extra biome data (spawn tables, etc.) ----
+function getBiomeExtra(zoneId) {
+  return BIOME_EXTRA[zoneId] || BIOME_EXTRA["forest"];
 }
