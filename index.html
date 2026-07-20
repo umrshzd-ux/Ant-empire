@@ -874,10 +874,38 @@ canvas { display: block; }
 <!-- Background music -->
 <audio id="bg-music" loop style="display:none"></audio>
 
-<!-- SCRIPTS -->
-<!-- SCRIPTS -->
-<!-- SCRIPTS – CORRECTED LOAD ORDER -->
+<!-- ============================================================
+   SCRIPTS – EXACT DEPENDENCY ORDER
+   ============================================================ -->
+<script src="js/three.min.js?v=final-2026"></script>
+<script src="js/audio.js?v=final-2026"></script>
+<script src="js/config.js?v=final-2026"></script>
+<script src="js/state.js?v=final-2026"></script>
+<script src="js/terrain.js?v=final-2026"></script>
+<script src="js/discoveries.js?v=final-2026"></script>
+<script src="js/goals.js?v=final-2026"></script>
+<script src="js/biomes.js?v=final-2026"></script>
+<script src="js/antclasses.js?v=final-2026"></script>
+<script src="js/rivals.js?v=final-2026"></script>
+<script src="js/royalchamber.js?v=final-2026"></script>
+<script src="js/scouts.js?v=final-2026"></script>
+<script src="js/buildings.js?v=final-2026"></script>
+<script src="js/research.js?v=final-2026"></script>
+<script src="js/bosses.js?v=final-2026"></script>
+<script src="js/camera.js?v=final-2026"></script>
+<script src="js/chambers.js?v=final-2026"></script>
+<script src="js/ants.js?v=final-2026"></script>
+<script src="js/enemies.js?v=final-2026"></script>
+<script src="js/combat.js?v=final-2026"></script>
+<script src="js/abilities.js?v=final-2026"></script>
+<script src="js/main.js?v=final-2026"></script>
+<script src="js/ui.js?v=final-2026"></script>
+<script src="js/shop.js?v=final-2026"></script>
+<script src="js/upgrades.js?v=final-2026"></script>
 
+<!-- ============================================================
+   INLINE SCRIPTS (must run after all external scripts)
+   ============================================================ -->
 <script>
 // ===== DUST PARTICLES =====
 (function(){
@@ -910,98 +938,69 @@ canvas { display: block; }
   }
   anim();
 })();
-</script>
-<!-- SCRIPTS – FINAL ORDER -->
-<script src="js/three.min.js?v=final-2026"></script>
-<script src="js/audio.js?v=final-2026"></script>
-<script src="js/config.js?v=final-2026"></script>
-<script src="js/state.js?v=final-2026"></script>
-<script src="js/terrain.js?v=final-2026"></script>
-<script src="js/discoveries.js?v=final-2026"></script>
-<script src="js/goals.js?v=final-2026"></script>
-<script src="js/biomes.js?v=final-2026"></script>
-<script src="js/antclasses.js?v=final-2026"></script>
-<script src="js/rivals.js?v=final-2026"></script>
-<script src="js/royalchamber.js?v=final-2026"></script>
-<script src="js/scouts.js?v=final-2026"></script>
-<script src="js/buildings.js?v=final-2026"></script>
-<script src="js/research.js?v=final-2026"></script>
-<script src="js/bosses.js?v=final-2026"></script>
-<script src="js/camera.js?v=final-2026"></script>
-<script src="js/chambers.js?v=final-2026"></script>
-<script src="js/ants.js?v=final-2026"></script>
-<script src="js/enemies.js?v=final-2026"></script>
-<script src="js/combat.js?v=final-2026"></script>
-<script src="js/abilities.js?v=final-2026"></script>
-<script src="js/main.js?v=final-2026"></script>
-<script src="js/ui.js?v=final-2026"></script>
-<script src="js/shop.js?v=final-2026"></script>
-<script src="js/upgrades.js?v=final-2026"></script>
-<script>
-  // Global functions for main menu buttons
-  window.openStats = function() {
-    document.getElementById('stats-panel').style.display = 'flex';
-    if (typeof refreshStatsUI === 'function') refreshStatsUI();
-  };
-  window.openRoadmap = function() {
-    document.getElementById('roadmap-panel').style.display = 'flex';
-    if (typeof refreshRoadmapUI === 'function') refreshRoadmapUI();
-  };
-  window.openHowToPlay = function() {
-    document.getElementById('howtoplay-panel').style.display = 'flex';
-  };
-  window.openSettings = function() {
-    document.getElementById('settings-panel').style.display = 'flex';
-  };
 
-  window.onerror = function(msg, url, line) {
-    var ld = document.getElementById('loading');
-    if (ld) {
-      ld.style.display = 'flex';
-      ld.innerHTML = '<div class="title">⚠️ Script Error</div>' +
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">' +
-        msg + '<br>File: ' + (url ? url.split('/').pop() : 'unknown') + ' (line ' + line + ')' +
-        '</div>' +
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-    }
-    return true;
-  };
+// Global functions for main menu buttons
+window.openStats = function() {
+  document.getElementById('stats-panel').style.display = 'flex';
+  if (typeof refreshStatsUI === 'function') refreshStatsUI();
+};
+window.openRoadmap = function() {
+  document.getElementById('roadmap-panel').style.display = 'flex';
+  if (typeof refreshRoadmapUI === 'function') refreshRoadmapUI();
+};
+window.openHowToPlay = function() {
+  document.getElementById('howtoplay-panel').style.display = 'flex';
+};
+window.openSettings = function() {
+  document.getElementById('settings-panel').style.display = 'flex';
+};
 
-  (function() {
-    var ld = document.getElementById('loading');
-    var bar = document.getElementById('progress-fill');
-    var msg = document.getElementById('loading-msg');
+window.onerror = function(msg, url, line) {
+  var ld = document.getElementById('loading');
+  if (ld) {
+    ld.style.display = 'flex';
+    ld.innerHTML = '<div class="title">⚠️ Script Error</div>' +
+      '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">' +
+      msg + '<br>File: ' + (url ? url.split('/').pop() : 'unknown') + ' (line ' + line + ')' +
+      '</div>' +
+      '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
+  }
+  return true;
+};
 
-    if (typeof THREE === 'undefined') {
-      ld.innerHTML = '<div class="title">⚠️ Failed to load</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center">Three.js not loaded. Check js/three.min.js</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
+// Startup
+(function() {
+  var ld = document.getElementById('loading');
+  var bar = document.getElementById('progress-fill');
+  var msg = document.getElementById('loading-msg');
 
-    try {
-      GameSettings.init();
-      AudioManager.init();
-    } catch(e) {
-      ld.style.display = 'flex';
-      ld.innerHTML = '<div class="title">⚠️ Startup Error</div>'+
-        '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+
-        e.toString()+'</div>'+
-        '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
-      return;
-    }
+  if (typeof THREE === 'undefined') {
+    ld.innerHTML = '<div class="title">⚠️ Failed to load</div>'+
+      '<div style="color:#ffaaaa;max-width:280px;text-align:center">Three.js not loaded. Check js/three.min.js</div>'+
+      '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
+    return;
+  }
 
-    // Initialize new systems before showing menu
-    initResearch();
-    initGoals();
+  try {
+    GameSettings.init();
+    AudioManager.init();
+  } catch(e) {
+    ld.style.display = 'flex';
+    ld.innerHTML = '<div class="title">⚠️ Startup Error</div>'+
+      '<div style="color:#ffaaaa;max-width:280px;text-align:center;font-size:12px">'+
+      e.toString()+'</div>'+
+      '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#d6a85a;border:none;border-radius:8px;color:#1a1208;font-weight:700;cursor:pointer">Retry</button>';
+    return;
+  }
 
-    // Always show main menu first, never auto-load
-    showMainMenu();
+  initResearch();
+  initGoals();
+  showMainMenu();
 
-    if (ld) ld.style.display = 'none';
-    if (bar) bar.style.width = '100%';
-    if (msg) msg.textContent = 'Ready!';
-  })();
+  if (ld) ld.style.display = 'none';
+  if (bar) bar.style.width = '100%';
+  if (msg) msg.textContent = 'Ready!';
+})();
 </script>
 </body>
-                                                                                      </html>
+   </html>
