@@ -113,7 +113,6 @@ var state = {
     poisonResist: false,
     queensWrathUnlocked: false,
     pheromoneShieldUnlocked: false,
-    // new bonuses from tier 4-5
     autoEggTransport: false,
     territoryCaravanBonus: false,
     rallyCooldownReduction: 0,
@@ -135,7 +134,10 @@ var state = {
   territoriesClaimed: [],
   territoryUnlockCost: 100,
   territoryPassiveTimer: 0,
-  territoryScoutQueue: []
+  territoryScoutQueue: [],
+
+  // Legendary bosses
+  legendaryDefeated: []   // list of zone keys (e.g., "forest") for defeated legendaries
 };
 var queenScale = BAL.queenBaseScale;
 state.lastTime = performance.now();
@@ -223,6 +225,8 @@ function resetStateToDefault(slot) {
   state.territoryUnlockCost = 100;
   state.territoryPassiveTimer = 0;
   state.territoryScoutQueue = [];
+  // Legendary reset (kept across prestiges, so NOT reset here; but reset on ascension)
+  // state.legendaryDefeated = []; // comment: kept across prestiges
   recalculateHatchTime();
   updateEggLayTime();
   recalculateFoodCap();
@@ -431,7 +435,6 @@ function loadGameData(data) {
   state.eventChoiceActive = false;
   // New systems
   if (data.researchBonuses) {
-    // Merge saved bonuses, ensuring new keys exist
     var defaults = {
       foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0,
       zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0,
@@ -460,6 +463,8 @@ function loadGameData(data) {
   if (data.territoryUnlockCost !== undefined) state.territoryUnlockCost = data.territoryUnlockCost;
   if (data.territoryPassiveTimer !== undefined) state.territoryPassiveTimer = data.territoryPassiveTimer;
   if (data.territoryScoutQueue) state.territoryScoutQueue = data.territoryScoutQueue;
+  // Legendary defeated
+  if (data.legendaryDefeated) state.legendaryDefeated = data.legendaryDefeated;
   state.xpToNext = Math.floor(40 * Math.pow(1.15, state.level - 1));
   recalculateHatchTime();
   updateEggLayTime();
