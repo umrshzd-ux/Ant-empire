@@ -476,7 +476,7 @@ function checkDailyLogin() {
 function updateStreakDisplay() { var el = document.getElementById('streak-display'); if (el) el.textContent = "🔥" + state.dailyStreak; }
 
 // =============================================
-//  PRESTIGE MODAL
+//  PRESTIGE MODAL (updated with Queen's Legacy)
 // =============================================
 function showPrestigeModal() {
   closeAllModals(); if (state.level < BAL.prestigeLevelReq) { showToast("Reach Level " + BAL.prestigeLevelReq + " to prestige!"); return; }
@@ -515,12 +515,20 @@ function performPrestige(ppGain) {
   if (state.currentBoss) { disposeMesh(state.currentBoss.mesh); scene.remove(state.currentBoss.mesh); state.currentBoss = null; }
   state.bossActive = false; var bossName = document.getElementById('boss-name'); if (bossName) bossName.style.display = 'none'; var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
   for (var i = 0; i < PRESTIGE_MILESTONES.length; i++) { var m = PRESTIGE_MILESTONES[i]; if (state.prestigeCount >= m.prestige) m.effect(); }
+  // Queen's Legacy bonus
+  if (state.researchBonuses.queensLegacy) {
+    state.workerCount += 2;
+  }
   rebuildAllChambers();
   if (state.ascensionUpgrades.elderWisdom > 0 && state.chambers.research.count === 0) { state.chambers.research.count = 1; var chX = getNextResearchX(); researchChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x3a3a5a) }); makeLabel("🔬 Research", chX, CCY + 1.4, CZ, 256, 64, true); researchChamberGroup = new THREE.Group(); researchChamberGroup.position.set(chX, CCY + 1.8, CZ); var orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 }); for (var i = 0; i < 5; i++) { var orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), orbMat); var angle = (i / 5) * Math.PI * 2; orb.position.set(Math.cos(angle) * 0.6, 0, Math.sin(angle) * 0.6); researchChamberGroup.add(orb); } scene.add(researchChamberGroup); }
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime; state.prestigeGoal = null; state.prestigeGoalSelected = false; state.buildQueue = [];
+  state.territoriesClaimed = [];
+  state.territoryUnlockCost = 100;
+  state.territoryPassiveTimer = 0;
+  state.territoryScoutQueue = [];
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
   emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 40, 0xff44ff, 0.1, 2.0, 1.0);
@@ -561,8 +569,12 @@ function performAscension(apGain) {
   state.lifetimeStats = { totalFood: 0, totalHatched: 0, totalKills: 0, totalBossKills: 0, totalPrestiges: 0, totalPlayTime: 0, totalGems: 0, totalRallies: 0, totalSurges: 0, totalNights: 0, fastestPrestige: 0 };
   state.ascensionCount = ascCount; state.ascensionPoints = ascPoints; state.ascensionUpgrades = ascUpgrades; state.hasAscended = true;
   state.caveBossKills = 0; state.swampBossKills = 0; state.mountainBossKills = 0; state.buildQueue = []; state.prestigeGoal = null; state.prestigeGoalSelected = false;
-  state.eventChoices = []; state.eventChoiceActive = false; state.researchBonuses = { foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0, zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0, poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false };
+  state.eventChoices = []; state.eventChoiceActive = false; state.researchBonuses = { foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0, zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0, poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false, autoEggTransport: false, territoryCaravanBonus: false, rallyCooldownReduction: 0, phalanxUnlocked: false, deepCartography: false, queensLegacy: false };
   state.completedResearch = []; state.queensWrathActive = false; state.queensWrathTimer = 0; state.queenProtected = false; state._royalGroups = [];
+  state.territoriesClaimed = [];
+  state.territoryUnlockCost = 100;
+  state.territoryPassiveTimer = 0;
+  state.territoryScoutQueue = [];
   clearAllMeshes(); buildQueenChamberWalls(); rebuildAllChambers();
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
@@ -783,7 +795,7 @@ function setupButtons() {
     btnTerritories.id = "btn-territories";
     btnTerritories.className = "build-btn";
     btnTerritories.textContent = "🗺️ Territories";
-    btnTerritories.style.display = "none";  // shown later if conditions met
+    btnTerritories.style.display = "none";
     var morePanel = document.getElementById("more-panel");
     if (morePanel) morePanel.appendChild(btnTerritories);
   }
@@ -791,7 +803,6 @@ function setupButtons() {
     AudioManager.sfx.buttonClick();
     toggleTerritoriesPanel();
   };
-  // Show button if at least one territory is claimed or research chamber is built (tease)
   if (btnTerritories) {
     btnTerritories.style.display = (state.territoriesClaimed.length > 0 || state.chambers.research.count > 0) ? 'inline-block' : 'none';
   }
