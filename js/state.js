@@ -112,7 +112,14 @@ var state = {
     foodCap: 0,
     poisonResist: false,
     queensWrathUnlocked: false,
-    pheromoneShieldUnlocked: false
+    pheromoneShieldUnlocked: false,
+    // new bonuses from tier 4-5
+    autoEggTransport: false,
+    territoryCaravanBonus: false,
+    rallyCooldownReduction: 0,
+    phalanxUnlocked: false,
+    deepCartography: false,
+    queensLegacy: false
   },
   completedResearch: [],
   queensWrathActive: false,
@@ -124,11 +131,11 @@ var state = {
   _bossRetreatTimer: 0,
   _lastBossStealTime: 0,
 
-  // ===== TERRITORY SYSTEM (new) =====
-  territoriesClaimed: [],          // [{ id, zone, pos:{x,y,z}, resourceType, level, claimedAt, assignedWorkers, assignedSoldiers }]
-  territoryUnlockCost: 100,        // base food cost to claim a new territory
-  territoryPassiveTimer: 0,        // accumulates dt for resource ticks
-  territoryScoutQueue: []          // queue of territories to be discovered by scouts
+  // Territory system
+  territoriesClaimed: [],
+  territoryUnlockCost: 100,
+  territoryPassiveTimer: 0,
+  territoryScoutQueue: []
 };
 var queenScale = BAL.queenBaseScale;
 state.lastTime = performance.now();
@@ -198,7 +205,9 @@ function resetStateToDefault(slot) {
   state.researchBonuses = {
     foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0,
     zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0,
-    poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false
+    poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false,
+    autoEggTransport: false, territoryCaravanBonus: false, rallyCooldownReduction: 0,
+    phalanxUnlocked: false, deepCartography: false, queensLegacy: false
   };
   state.completedResearch = [];
   state.queensWrathActive = false;
@@ -260,9 +269,7 @@ function recalculateFoodCap() {
   state.foodCap = BAL.baseFoodCap + state.chambers.foodStorage.bonusCap + state.upgrades.foodCap * UPGRADES.foodCap.effect + (state.level - 1) * 25 + (state.prestigeUpgrades.ppCap || 0) * 50;
   if (state.gemUpgrades.deepStorage) state.foodCap += 300;
   if (state.researchBonuses && state.researchBonuses.foodCap) state.foodCap += state.researchBonuses.foodCap;
-  // Zone exploration bonus: +30 per unlocked zone
   if (state.unlockedZonesList) state.foodCap += state.unlockedZonesList.length * 30;
-  // Territory bonus: +50 per claimed territory
   if (state.territoriesClaimed) state.foodCap += state.territoriesClaimed.length * 50;
 }
 function getUpgradeCost(type) {
@@ -423,7 +430,22 @@ function loadGameData(data) {
   state.eventChoices = [];
   state.eventChoiceActive = false;
   // New systems
-  if (data.researchBonuses) state.researchBonuses = data.researchBonuses;
+  if (data.researchBonuses) {
+    // Merge saved bonuses, ensuring new keys exist
+    var defaults = {
+      foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0,
+      zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0,
+      poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false,
+      autoEggTransport: false, territoryCaravanBonus: false, rallyCooldownReduction: 0,
+      phalanxUnlocked: false, deepCartography: false, queensLegacy: false
+    };
+    for (var key in defaults) {
+      if (data.researchBonuses[key] !== undefined) {
+        defaults[key] = data.researchBonuses[key];
+      }
+    }
+    state.researchBonuses = defaults;
+  }
   if (data.completedResearch) state.completedResearch = data.completedResearch;
   state.queensWrathActive = data.queensWrathActive || false;
   state.queensWrathTimer = data.queensWrathTimer || 0;
@@ -463,4 +485,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-      }
+                         }
