@@ -87,6 +87,7 @@ function showAchievementToast(ach, newTier) {
   at.style.opacity = "1";
   if (achToastTimeout) clearTimeout(achToastTimeout);
   achToastTimeout = setTimeout(function() { at.style.opacity = "0"; achToastTimeout = null; }, 4000);
+  triggerHaptic(20, 0.5);
 }
 
 function spawnFloater(text, sx, sy, color) {
@@ -450,15 +451,27 @@ function refreshRoadmapUI() {
 }
 
 // =============================================
-//  OFFLINE PROGRESS
+//  OFFLINE PROGRESS (ENHANCED)
 // =============================================
 function calculateOfflineProgress() {
   var now = Date.now(); var elapsed = (now - state.lastSaveTime) / 1000; if (elapsed < 30 || state.lastSaveTime === 0) return null;
   var cappedTime = Math.min(elapsed, 28800); var eff = BAL.offlineEfficiency;
+  // Food from workers (basic gathering)
   var foodEarned = Math.floor(state.workerCount * getEffectiveFoodPerTrip() * (cappedTime / (state.eggLayTime * 2)) * eff);
-  var eggsLaid = Math.floor(cappedTime / state.eggLayTime * eff); var gemsEarned = Math.floor(cappedTime / 1800 * eff);
-  foodEarned = Math.min(foodEarned, state.foodCap * 3); eggsLaid = Math.min(eggsLaid, 30); gemsEarned = Math.min(gemsEarned, 5);
-  return { time: cappedTime, food: foodEarned, eggs: eggsLaid, gems: gemsEarned };
+  var eggsLaid = Math.floor(cappedTime / state.eggLayTime * eff);
+  var gemsEarned = Math.floor(cappedTime / 1800 * eff);
+  // Food from territories
+  var terrFood = 0;
+  for (var i = 0; i < state.territoriesClaimed.length; i++) {
+    var terr = state.territoriesClaimed[i];
+    var terrRate = terr.assignedWorkers * (state.researchBonuses.territoryCaravanBonus ? 3 : 2);
+    terrFood += Math.floor(terrRate * (cappedTime / 5) * eff);
+  }
+  foodEarned += terrFood;
+  foodEarned = Math.min(foodEarned, state.foodCap * 3);
+  eggsLaid = Math.min(eggsLaid, 30);
+  gemsEarned = Math.min(gemsEarned, 5);
+  return { time: cappedTime, food: foodEarned, eggs: eggsLaid, gems: gemsEarned, terrFood: terrFood };
 }
 function showOfflineModal(data) {
   closeAllModals(); if (!data || data.time < 30) { checkDailyLogin(); return; }
@@ -468,6 +481,22 @@ function showOfflineModal(data) {
   var elFood = document.getElementById('offline-food'); if (elFood) elFood.textContent = "🌾 +" + data.food + " food";
   var elEggs = document.getElementById('offline-eggs'); if (elEggs) elEggs.textContent = "🥚 +" + data.eggs + " eggs";
   var elGems = document.getElementById('offline-gems'); if (elGems) elGems.textContent = "💎 +" + data.gems + " gems";
+  // Add breakdown
+  var elBreakdown = document.getElementById('offline-breakdown');
+  if (!elBreakdown) {
+    elBreakdown = document.createElement('div');
+    elBreakdown.id = 'offline-breakdown';
+    elBreakdown.style.cssText = 'color:#aaa; font-size:12px; margin-top:8px; text-align:left;';
+    var mc = modal.querySelector('.modal-card');
+    if (mc) mc.appendChild(elBreakdown);
+  }
+  var breakdownHtml = '<div style="margin-bottom:4px;">📊 Breakdown:</div>';
+  breakdownHtml += '<div>🐜 Workers: +' + Math.floor(data.food - (data.terrFood || 0)) + ' food</div>';
+  breakdownHtml += '<div>🏁 Territories: +' + (data.terrFood || 0) + ' food</div>';
+  breakdownHtml += '<div>🥚 Queen: +' + data.eggs + ' eggs</div>';
+  breakdownHtml += '<div>💎 Random: +' + data.gems + ' gems</div>';
+  elBreakdown.innerHTML = breakdownHtml;
+
   modal.style.display = "flex";
   var claimBtn = document.getElementById('offline-claim');
   if (claimBtn) claimBtn.onclick = function() {
@@ -554,7 +583,6 @@ function performPrestige(ppGain) {
   state.territoryPassiveTimer = 0;
   state.territoryScoutQueue = [];
   state.dynamicEventTimer = 300 + Math.random() * 600;
-  // legendaryDefeated is NOT reset here
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
   initTerritoryMarkers();
@@ -970,4 +998,4 @@ function buyUpgrade(type) {
   showToast(msg);
   refreshUpgradeUI();
   refreshHUD();
-    }
+                                                           }
