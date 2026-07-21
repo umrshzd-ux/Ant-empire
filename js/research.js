@@ -19,7 +19,6 @@ var RESEARCH_TREE = {
       showToast("🌾 Efficient Gathering complete! +1 food per trip");
     },
     prereq: null,
-    // Additional condition: must have at least 1 Scout Post built (forces exploration)
     canResearch: function() {
       return state.chambers.scout && state.chambers.scout.count >= 1;
     }
@@ -54,10 +53,44 @@ var RESEARCH_TREE = {
     effect: "Unlocks the Builder ant class. Build times reduced by 25%.",
     unlocks: ["builderClass"],
     onComplete: function() {
-      // Builder class is automatically unlocked via its condition (research completed)
       showToast("🔨 Efficient Construction complete! Builder class unlocked");
     },
     prereq: "efficientGathering"
+  },
+
+  // ========== ECONOMY TIER 4-5 ==========
+  autoEggTransport: {
+    id: "autoEggTransport",
+    name: "Auto-Egg Transport",
+    emoji: "🥚➡️",
+    category: "economy",
+    tier: 4,
+    cost: 350,
+    desc: "Eggs are automatically carried to the nursery without a worker.",
+    effect: "No worker needed to transport eggs to nursery.",
+    unlocks: ["autoEggTransport"],
+    onComplete: function() {
+      state.researchBonuses.autoEggTransport = true;
+      showToast("🥚 Auto-Egg Transport active! Eggs move automatically.");
+    },
+    prereq: "deepStorage"
+  },
+
+  caravanRoutes: {
+    id: "caravanRoutes",
+    name: "Caravan Routes",
+    emoji: "🐜📦",
+    category: "economy",
+    tier: 5,
+    cost: 500,
+    desc: "Territory workers generate +3 food per tick instead of +2.",
+    effect: "Claimed territories produce 50% more food.",
+    unlocks: [],
+    onComplete: function() {
+      state.researchBonuses.territoryCaravanBonus = true;
+      showToast("🐜 Caravan Routes established! Territory food +50%.");
+    },
+    prereq: "autoEggTransport"
   },
 
   // ========== MILITARY BRANCH ==========
@@ -111,10 +144,44 @@ var RESEARCH_TREE = {
     unlocks: ["royalGuardClass"],
     onComplete: function() {
       state.researchBonuses.soldierDamage = (state.researchBonuses.soldierDamage || 0) + 5;
-      // Royal Guard class is automatically unlocked via its condition
       showToast("⚔️ Advanced Combat complete! Royal Guard class +5 damage");
     },
     prereq: "poisonResistance"
+  },
+
+  // ========== MILITARY TIER 4-5 ==========
+  rallyMastery: {
+    id: "rallyMastery",
+    name: "Rally Mastery",
+    emoji: "⚡⏱️",
+    category: "military",
+    tier: 4,
+    cost: 350,
+    desc: "Improved rally tactics reduce cooldown by 40%.",
+    effect: "Rally cooldown reduced to 72 seconds.",
+    unlocks: [],
+    onComplete: function() {
+      state.researchBonuses.rallyCooldownReduction = 0.4;
+      showToast("⚡ Rally Mastery complete! Rally cooldown -40%.");
+    },
+    prereq: "advancedCombat"
+  },
+
+  soldierPhalanx: {
+    id: "soldierPhalanx",
+    name: "Soldier Phalanx",
+    emoji: "🛡️⚔️",
+    category: "military",
+    tier: 5,
+    cost: 500,
+    desc: "Soldiers gain +10% damage for each adjacent soldier (max +50%).",
+    effect: "Damage bonus based on nearby soldiers.",
+    unlocks: [],
+    onComplete: function() {
+      state.researchBonuses.phalanxUnlocked = true;
+      showToast("🛡️ Soldier Phalanx researched! Adjacent soldiers boost damage.");
+    },
+    prereq: "rallyMastery"
   },
 
   // ========== EXPLORATION BRANCH ==========
@@ -163,11 +230,28 @@ var RESEARCH_TREE = {
     effect: "Unlocks the Explorer class. Scout speed +30%.",
     unlocks: ["explorerClass"],
     onComplete: function() {
-      // Explorer class is automatically unlocked via its condition
       state.researchBonuses.scoutSpeed = (state.researchBonuses.scoutSpeed || 0) + 0.3;
       showToast("🏔️ Trailblazing complete! Explorer class +30% speed");
     },
     prereq: "cartography"
+  },
+
+  // ========== EXPLORATION TIER 4 ==========
+  deepCartography: {
+    id: "deepCartography",
+    name: "Deep Cartography",
+    emoji: "🗺️🏁",
+    category: "exploration",
+    tier: 4,
+    cost: 400,
+    desc: "Scouts have a 5% chance to instantly claim an unclaimed territory.",
+    effect: "Small chance to claim a territory on scout return.",
+    unlocks: [],
+    onComplete: function() {
+      state.researchBonuses.deepCartography = true;
+      showToast("🗺️ Deep Cartography complete! Scouts may claim new territories.");
+    },
+    prereq: "trailblazing"
   },
 
   // ========== QUEEN BRANCH ==========
@@ -223,6 +307,24 @@ var RESEARCH_TREE = {
       showToast("🛡️ Pheromone Shield ability unlocked!");
     },
     prereq: "queensWrathResearch"
+  },
+
+  // ========== QUEEN TIER 5 ==========
+  queensLegacy: {
+    id: "queensLegacy",
+    name: "Queen's Legacy",
+    emoji: "👑🧬",
+    category: "queen",
+    tier: 5,
+    cost: 600,
+    desc: "Future generations are stronger. Start each prestige with +2 workers.",
+    effect: "+2 permanent starting workers after prestige.",
+    unlocks: [],
+    onComplete: function() {
+      state.researchBonuses.queensLegacy = true;
+      showToast("👑 Queen's Legacy secured! +2 workers on future prestiges.");
+    },
+    prereq: "pheromoneMastery"
   }
 };
 
@@ -239,7 +341,14 @@ if (!state.researchBonuses) {
     foodCap: 0,
     poisonResist: false,
     queensWrathUnlocked: false,
-    pheromoneShieldUnlocked: false
+    pheromoneShieldUnlocked: false,
+    // new bonuses
+    autoEggTransport: false,
+    territoryCaravanBonus: false,
+    rallyCooldownReduction: 0,
+    phalanxUnlocked: false,
+    deepCartography: false,
+    queensLegacy: false
   };
 }
 if (!state.completedResearch) {
@@ -373,10 +482,16 @@ function initResearch() {
       foodCap: 0,
       poisonResist: false,
       queensWrathUnlocked: false,
-      pheromoneShieldUnlocked: false
+      pheromoneShieldUnlocked: false,
+      autoEggTransport: false,
+      territoryCaravanBonus: false,
+      rallyCooldownReduction: 0,
+      phalanxUnlocked: false,
+      deepCartography: false,
+      queensLegacy: false
     };
   }
   if (!state.completedResearch) {
     state.completedResearch = [];
   }
-}
+  }
