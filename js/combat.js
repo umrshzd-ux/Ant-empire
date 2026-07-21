@@ -31,6 +31,8 @@ function combatUpdate(dt) {
       }
       te.health -= dmg;
       spawnDamageNumber(dmg, te.mesh.position, "#ff4444");
+      // Flash the enemy being hit (red)
+      flashMesh(te.mesh, 0xff0000, 0.08);
       s.attackCooldown = BAL.soldierAttackCD;
       s.lastCombatTime = performance.now() / 1000;
       if (te.health <= 0) killSpider(te);
@@ -70,6 +72,8 @@ function combatUpdate(dt) {
       if (defenseActive) dmg *= 0.5;
       ts.health -= dmg;
       spawnDamageNumber(dmg, ts.mesh.position, "#ffaa00");
+      // Flash the soldier being hit (orange)
+      flashMesh(ts.mesh, 0xff8800, 0.08);
       sp.attackCooldown = BAL.spiderAttackCD;
       ts.lastCombatTime = performance.now() / 1000;
       updateHealthBar(ts.healthBar, ts.health / ts.maxHealth);
