@@ -240,7 +240,6 @@ window.loadSlot = function(slot) {
 
 // ===== TERRITORY SYSTEM FUNCTIONS (new) =====
 
-// Claim a territory by marker index
 function claimTerritory(markerIndex) {
   if (markerIndex < 0 || markerIndex >= territoryMarkers.length) return;
   var marker = territoryMarkers[markerIndex];
@@ -256,7 +255,6 @@ function claimTerritory(markerIndex) {
   state.food -= cost;
   marker.claimed = true;
   marker.mesh.userData.claimed = true;
-  // Change flag colour to gold
   marker.mesh.children.forEach(function(child) {
     if (child.isMesh && child.material.color) {
       child.material.color.setHex(0xFFD700);
@@ -268,14 +266,14 @@ function claimTerritory(markerIndex) {
     id: territoryId,
     zone: marker.zoneId,
     pos: { x: marker.position.x, y: marker.position.y, z: marker.position.z },
-    resourceType: 'food',   // all give food for now
+    resourceType: 'food',
     level: 1,
     claimedAt: Date.now(),
     assignedWorkers: 0,
     assignedSoldiers: 0
   };
   state.territoriesClaimed.push(newTerritory);
-  state.territoryUnlockCost = Math.floor(state.territoryUnlockCost * 1.5); // increase cost for next
+  state.territoryUnlockCost = Math.floor(state.territoryUnlockCost * 1.5);
   recalculateFoodCap();
   emitParticles(marker.position, 10, 0xFFD700, 0.06, 0.8, 0.5);
   showToast("🏁 Territory claimed! +50 food capacity");
@@ -283,9 +281,7 @@ function claimTerritory(markerIndex) {
   saveGame();
 }
 
-// Show a modal to assign workers/soldiers to a territory
 function showTerritoryAssignPanel(territoryId) {
-  // Find territory
   var terr = null;
   for (var i = 0; i < state.territoriesClaimed.length; i++) {
     if (state.territoriesClaimed[i].id === territoryId) {
@@ -334,7 +330,6 @@ window.adjustTerritoryAssign = function(territoryId, type, delta) {
     terr.assignedSoldiers = newVal;
   }
 
-  // Refresh panel
   var modal = document.getElementById('territory-assign-modal');
   if (modal) {
     modal.remove();
@@ -363,20 +358,19 @@ function getTotalAssignedSoldiers(excludeId) {
   return total;
 }
 
-// Passive resource generation from territories (called in game loop)
 function updateTerritoryResources(dt) {
   if (state.territoriesClaimed.length === 0) return;
   state.territoryPassiveTimer += dt;
-  var tickInterval = 5; // seconds
+  var tickInterval = 5;
   if (state.territoryPassiveTimer >= tickInterval) {
     state.territoryPassiveTimer -= tickInterval;
     for (var i = 0; i < state.territoriesClaimed.length; i++) {
       var terr = state.territoriesClaimed[i];
-      var generation = terr.assignedWorkers * 2; // each worker gives 2 food per tick
+      var foodPerWorker = state.researchBonuses.territoryCaravanBonus ? 3 : 2;
+      var generation = terr.assignedWorkers * foodPerWorker;
       if (generation > 0) {
         addFood(generation, null);
       }
-      // Small chance for gem (1% per assigned soldier)
       if (terr.assignedSoldiers > 0 && Math.random() < terr.assignedSoldiers * 0.01) {
         addGems(1);
       }
@@ -384,7 +378,7 @@ function updateTerritoryResources(dt) {
   }
 }
 
-// Click handler for territory markers (integrated into existing handler)
+// Click handler for territory markers (integrated)
 renderer.domElement.addEventListener('click', function(e) {
   if (!qMesh) return;
   var mouse = new THREE.Vector2();
@@ -393,11 +387,9 @@ renderer.domElement.addEventListener('click', function(e) {
 
   raycaster.setFromCamera(mouse, camera);
 
-  // Check territory markers first
   var territoryIntersects = raycaster.intersectObjects(territoryMarkers.map(function(m) { return m.mesh; }), true);
   if (territoryIntersects.length > 0) {
     var clickedObj = territoryIntersects[0].object;
-    // Traverse up to find the marker group
     while (clickedObj && !clickedObj.userData.isTerritoryMarker) {
       clickedObj = clickedObj.parent;
     }
@@ -411,7 +403,6 @@ renderer.domElement.addEventListener('click', function(e) {
       }
       if (markerIndex >= 0) {
         if (territoryMarkers[markerIndex].claimed) {
-          // Open assignment panel
           var terr = null;
           var markerPos = territoryMarkers[markerIndex].position;
           for (var j = 0; j < state.territoriesClaimed.length; j++) {
@@ -425,15 +416,13 @@ renderer.domElement.addEventListener('click', function(e) {
             showTerritoryAssignPanel(terr.id);
           }
         } else {
-          // Claim territory
           claimTerritory(markerIndex);
         }
       }
-      return; // stop propagation, don't click queen
+      return;
     }
   }
 
-  // Queen click fallback
   var intersects = raycaster.intersectObject(qMesh, true);
   if (intersects.length > 0) {
     state.queenClicks++;
@@ -467,12 +456,11 @@ function checkTutorials() {
     }
   }
 
-  // Persistent Scout Post hint
   if (state.chambers.research.count >= 1 && state.chambers.scout.count === 0 && !state.tutorialsShown.scoutPersistent) {
     var el = document.getElementById('tutorial-toast');
     el.textContent = "🔍 Build a Scout Post to explore the world!";
     el.style.opacity = "1";
-    tutorialActive = null; // persist until scout built
+    tutorialActive = null;
     var scoutBtn = document.getElementById('build-scout');
     if (scoutBtn) scoutBtn.classList.add('hint-pulse');
   } else if (state.chambers.scout.count > 0 && !state.tutorialsShown.scoutPersistent) {
@@ -513,7 +501,6 @@ function checkZoneUnlocks() {
     if (trips >= cfg.tripReq && state.unlockedZonesList.indexOf(zid) === -1) {
       state.unlockedZonesList.push(zid);
       showToast("🗺️ " + cfg.label + " unlocked!");
-      // Apply zone unlock food bonus
       state.foodCap += 30;
       recalculateFoodCap();
       if (!newlyUnlocked) newlyUnlocked = zid;
@@ -606,7 +593,7 @@ function startGameLoop() {
     dt = Math.min(dt, 0.1);
     state.lastTime = now;
 
-    // ---- General updates (timers, basic state) ----
+    // ---- General updates ----
     try {
       state.lifetimeStats.totalPlayTime = (state.lifetimeStats.totalPlayTime || 0) + dt;
 
@@ -628,7 +615,6 @@ function startGameLoop() {
 
       if (state.earlyGameBoost > 0) { state.earlyGameBoost -= dt; if (state.earlyGameBoost <= 0) { state.earlyGameBoost = 0; updateEggLayTime(); } }
 
-      // Build Queue processing (with Builder class bonus)
       if (state.buildQueue.length > 0) {
         var currentBuild = state.buildQueue[0];
         var buildSpeed = 1 + (typeof getBuilderBuildSpeedBonus === 'function' ? getBuilderBuildSpeedBonus() : 0);
@@ -640,7 +626,7 @@ function startGameLoop() {
       }
     } catch(e) { console.error('General update error:', e); }
 
-    // ---- Rain update ----
+    // ---- Rain ----
     try {
       if (state.weatherActive && state.weatherType === "rain") {
         _lastRainUpdate += dt;
@@ -669,7 +655,6 @@ function startGameLoop() {
       else { if (state.waveSpidersRemaining <= 0 && enemies.length === 0) endWave(); }
       updateWaveTimer();
 
-      // Event handling (reactive events first)
       if (!state.eventActive && !state.eventChoiceActive) {
         state.eventTimer -= dt;
         if (state.eventTimer <= 0) {
@@ -698,7 +683,6 @@ function startGameLoop() {
       }
       updateEventTimer();
 
-      // Boss logic
       if (!state.bossActive) {
         state.bossTimer -= dt;
         if (state.bossTimer <= 0) {
@@ -773,7 +757,7 @@ function startGameLoop() {
       updateClassAbilities(dt);
     } catch(e) { console.error('Class ability error:', e); }
 
-    // ---- Enemies (flee loop with safety checks) ----
+    // ---- Enemies ----
     try {
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
@@ -848,7 +832,7 @@ function startGameLoop() {
       for (var sci = 0; sci < scouts.length; sci++) updateScout(scouts[sci], dt);
     } catch(e) { console.error('Worker/soldier/scout error:', e); }
 
-    // ---- Enemy movement (non-stealing) ----
+    // ---- Enemy movement ----
     try {
       for (var ei = 0; ei < enemies.length; ei++) {
         var e = enemies[ei];
@@ -865,7 +849,7 @@ function startGameLoop() {
       }
     } catch(e) { console.error('Enemy movement error:', e); }
 
-    // ---- Combat (spiders only) ----
+    // ---- Combat ----
     try {
       combatUpdate(dt);
     } catch(e) { console.error('Combat error:', e); }
@@ -932,7 +916,7 @@ function startGameLoop() {
       if (storagePilesDirty && storageUpdateCounter > 30) { storageUpdateCounter = 0; storagePilesDirty = false; updateStoragePiles(); }
     } catch(e) { console.error('Storage piles error:', e); }
 
-    // ---- Territory resources (new) ----
+    // ---- Territory resources ----
     try {
       updateTerritoryResources(dt);
     } catch(e) { console.error('Territory error:', e); }
@@ -964,7 +948,6 @@ function startGameLoop() {
       if (sC > 10) { sC = 0; state.lastSaveTime = Date.now(); saveGame(); }
     } catch(e) { console.error('Save error:', e); }
 
-    // ---- Render always runs ----
     try {
       renderer.render(scene, camera);
     } catch(e) { console.error('Render error:', e); }
@@ -974,7 +957,7 @@ function startGameLoop() {
 
 function initGameSystems() {
   if (gameSystemsReady) { clearAllMeshes(); gameSystemsReady = false; }
-  buildTerrain();  // includes initTerritoryMarkers()
+  buildTerrain();
   buildQueenChamberWalls();
   initFoodStations();
   initMushrooms();
@@ -1012,7 +995,7 @@ function initGameSystems() {
   if (summonBtn) summonBtn.style.display = 'none';
 }
 
-// Prestige function
+// Prestige function (with Queen's Legacy)
 function performPrestige(ppGain) {
   resetWeatherAndBoosts(); var pt = state.lifetimeStats.totalPlayTime + (performance.now() - state.lastTime) / 1000;
   if (state.prestigeStartTime > 0) { var thisPrestigeTime = pt - state.prestigeStartTime; if (!state.lifetimeStats.fastestPrestige || thisPrestigeTime < state.lifetimeStats.fastestPrestige) state.lifetimeStats.fastestPrestige = thisPrestigeTime; }
@@ -1037,21 +1020,22 @@ function performPrestige(ppGain) {
   if (state.currentBoss) { disposeMesh(state.currentBoss.mesh); scene.remove(state.currentBoss.mesh); state.currentBoss = null; }
   state.bossActive = false; var bossName = document.getElementById('boss-name'); if (bossName) bossName.style.display = 'none'; var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
   for (var i = 0; i < PRESTIGE_MILESTONES.length; i++) { var m = PRESTIGE_MILESTONES[i]; if (state.prestigeCount >= m.prestige) m.effect(); }
+  // Queen's Legacy bonus
+  if (state.researchBonuses.queensLegacy) {
+    state.workerCount += 2;
+  }
   rebuildAllChambers();
   if (state.ascensionUpgrades.elderWisdom > 0 && state.chambers.research.count === 0) { state.chambers.research.count = 1; var chX = getNextResearchX(); researchChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x3a3a5a) }); makeLabel("🔬 Research", chX, CCY + 1.4, CZ, 256, 64, true); researchChamberGroup = new THREE.Group(); researchChamberGroup.position.set(chX, CCY + 1.8, CZ); var orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 }); for (var i = 0; i < 5; i++) { var orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), orbMat); var angle = (i / 5) * Math.PI * 2; orb.position.set(Math.cos(angle) * 0.6, 0, Math.sin(angle) * 0.6); researchChamberGroup.add(orb); } scene.add(researchChamberGroup); }
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime; state.prestigeGoal = null; state.prestigeGoalSelected = false; state.buildQueue = [];
-  // Reset territory system
   state.territoriesClaimed = [];
   state.territoryUnlockCost = 100;
   state.territoryPassiveTimer = 0;
   state.territoryScoutQueue = [];
-  // Reset first‑time flags
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
-  // Re-init territory markers
   initTerritoryMarkers();
   emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 40, 0xff44ff, 0.1, 2.0, 1.0);
   showToast("✨ Prestige complete! Gained " + ppGain + " PP"); refreshHUD(); checkAchievements(); saveGame();
@@ -1079,9 +1063,8 @@ function performAscension(apGain) {
   state.lifetimeStats = { totalFood: 0, totalHatched: 0, totalKills: 0, totalBossKills: 0, totalPrestiges: 0, totalPlayTime: 0, totalGems: 0, totalRallies: 0, totalSurges: 0, totalNights: 0, fastestPrestige: 0 };
   state.ascensionCount = ascCount; state.ascensionPoints = ascPoints; state.ascensionUpgrades = ascUpgrades; state.hasAscended = true;
   state.caveBossKills = 0; state.swampBossKills = 0; state.mountainBossKills = 0; state.buildQueue = []; state.prestigeGoal = null; state.prestigeGoalSelected = false;
-  state.eventChoices = []; state.eventChoiceActive = false; state.researchBonuses = { foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0, zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0, poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false };
+  state.eventChoices = []; state.eventChoiceActive = false; state.researchBonuses = { foodPerTrip: 0, soldierHealth: 0, soldierDamage: 0, discoveryChance: 0, zoneTripReduction: 0, eggLayReduction: 0, scoutSpeed: 0, foodCap: 0, poisonResist: false, queensWrathUnlocked: false, pheromoneShieldUnlocked: false, autoEggTransport: false, territoryCaravanBonus: false, rallyCooldownReduction: 0, phalanxUnlocked: false, deepCartography: false, queensLegacy: false };
   state.completedResearch = []; state.queensWrathActive = false; state.queensWrathTimer = 0; state.queenProtected = false; state._royalGroups = [];
-  // Reset territory
   state.territoriesClaimed = [];
   state.territoryUnlockCost = 100;
   state.territoryPassiveTimer = 0;
@@ -1090,10 +1073,8 @@ function performAscension(apGain) {
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
   recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
-  // Reset first‑time flags
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
-  // Re-init territory markers
   initTerritoryMarkers();
   AudioManager.sfx.ascend(); emitParticles(_v3.set(TX, GTY + 1.5, TCZ), 60, 0xffaa00, 0.12, 2.5, 1.2);
   showToast("⬆️ Ascension complete! +1 AP, permanent multipliers active!"); refreshHUD(); checkAchievements(); saveGame();
