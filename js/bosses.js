@@ -388,7 +388,7 @@ function updateBoss(dt) {
   if (boss.mesh && boss.mesh.userData._legendaryGlow) {
     var glowIntensity = 0.3 + Math.sin(performance.now() / 500) * 0.2;
     boss.mesh.traverse(function(child) {
-      if (child.isMesh && child.material.emissive) {
+      if (child.isMesh && child.material && child.material.emissive) {
         child.material.emissiveIntensity = glowIntensity;
       }
     });
@@ -682,4 +682,4 @@ function summonBoss() {
 // Reset first boss flag on prestige/ascension
 function resetFirstBossFlag() {
   _firstBossSpawned = false;
-          }
+    }
