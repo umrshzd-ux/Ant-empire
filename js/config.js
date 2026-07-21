@@ -94,11 +94,6 @@ var GEM_ITEMS = {
   legendaryMountain:    { name: "Mountain Legend",     desc: "Boss damage taken -15%",            cost: 0, category: "legendary", oneTime: true }
 };
 
-// Merge legendary rewards into GEM_ITEMS so buyGemItem can handle them (they are unlocked by boss defeat, not purchased)
-// We'll just keep them in GEM_ITEMS but they are only set true via code, not via shop.
-// They are not purchasable; their cost=0 prevents accidental purchase. 
-// The UI will show them in the shop as owned once obtained, but they won't be buyable.
-
 var DAILY_REWARDS = [
   { day: 1, gems: 1 }, { day: 2, gems: 1 }, { day: 3, gems: 2 }, { day: 4, gems: 2 },
   { day: 5, gems: 3 }, { day: 6, gems: 3 }, { day: 7, gems: 5, special: true, bonusItem: "goldenEgg" }
@@ -408,4 +403,94 @@ var REACTIVE_EVENTS = [
       { text: "Ambush (+8 soldier dmg permanently)", action: function() { state.gemUpgrades.antStrength = (state.gemUpgrades.antStrength || 0) + 8; } },
       { text: "Fortify (+100 food)", action: function() { addFood(100); } }
     ] }
+];
+
+// ===== DYNAMIC EVENTS =====
+var DYNAMIC_EVENTS = [
+  {
+    id: "spiderMigration",
+    name: "Spider Migration",
+    emoji: "🕷️🕸️",
+    condition: function() { return state.level >= 10 && state.prestigeCount >= 2; },
+    action: function() {
+      showToast("🕷️ Spider Migration! A massive wave approaches!");
+      // Spawn a custom wave with double the spiders and higher health
+      startWaveWithParams(10, 12, 50, 8);
+    },
+    duration: 0 // no ongoing effect, just immediate
+  },
+  {
+    id: "waspSwarm",
+    name: "Wasp Swarm",
+    emoji: "🐝🐝",
+    condition: function() { return state.unlockedZonesList.indexOf("meadow") !== -1; },
+    action: function() {
+      showToast("🐝 Wasp Swarm incoming! They're fast and deadly!");
+      // Spawn 5 wasp-like enemies (recolored spiders with higher speed and damage)
+      for (var i = 0; i < 5; i++) {
+        if (enemies.length < BAL.maxEnemies) {
+          var wasp = createCustomEnemy(0xFFD700, 0xB8860B, 25, 8, 0.6);
+          enemies.push(wasp);
+        }
+      }
+    },
+    duration: 0
+  },
+  {
+    id: "fungalBloom",
+    name: "Fungal Bloom",
+    emoji: "🍄✨",
+    condition: function() { return state.currentZone === "cave" || state.currentZone === "swamp"; },
+    action: function() {
+      showToast("🍄 A fungal bloom erupts! +200 food and +10 permanent food cap.");
+      addFood(200, ER.clone());
+      state.foodCap += 10;
+      recalculateFoodCap();
+    },
+    duration: 0
+  },
+  {
+    id: "gemShower",
+    name: "Gem Shower",
+    emoji: "💎🌧️",
+    condition: function() { return state.prestigeCount >= 5; },
+    action: function() {
+      var gems = 3 + Math.floor(Math.random() * 5);
+      addGems(gems);
+      showToast("💎 Gem Shower! +" + gems + " gems from the sky.");
+    },
+    duration: 0
+  },
+  {
+    id: "seasonalRaid",
+    name: "Seasonal Raid",
+    emoji: "⚔️🍂",
+    condition: function() { return state.lifetimeStats.totalPlayTime > 3600; },
+    action: function() {
+      showToast("⚔️ A raiding party of beetles is attacking!");
+      // Spawn 4 tough beetle-like enemies
+      for (var i = 0; i < 4; i++) {
+        if (enemies.length < BAL.maxEnemies) {
+          var beetle = createCustomEnemy(0x444400, 0x222200, 40, 10, 0.4);
+          enemies.push(beetle);
+        }
+      }
+    },
+    duration: 0
+  },
+  {
+    id: "antMigration",
+    name: "Ant Migration",
+    emoji: "🐜🐜🐜",
+    condition: function() { return state.workerCount >= 10; },
+    action: function() {
+      showToast("🐜 A friendly ant migration joins your colony! +3 workers");
+      for (var i = 0; i < 3; i++) {
+        state.workerCount++;
+        var nw = createWorker(false);
+        if (nw) workers.push(nw);
+      }
+    },
+    duration: 0
+  }
 ];
