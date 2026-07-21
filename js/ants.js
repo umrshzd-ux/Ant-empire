@@ -190,8 +190,39 @@ function updateSoldier(s, dt) {
 var eggMs = [], hatchFx = [];
 function pTH() { var b = document.getElementById("btn-tunnel"); if (b) { b.classList.remove("hint-pulse"); void b.offsetWidth; b.classList.add("hint-pulse"); } }
 function layEgg() {
-  if (state.chambers.nursery.count > 0) { var cf = createEggTransport(); if (!cf) { state.eggs++; var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 })); m.position.copy(qMesh.position); m.position.x += (Math.random() - 0.5) * 1.6; m.position.z += (Math.random() - 0.5) * 1.4; m.scale.setScalar(0.3); scene.add(m); eggMs.push({ mesh: m, mat: m.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: m.position.x, restZ: m.position.z, settling: false, settleT: 0 }); } }
-  else { state.eggs++; var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 })); var jx = (Math.random() - 0.5) * 1.6, jz = (Math.random() - 0.5) * 1.4; m.position.copy(qMesh.position); m.position.x += jx; m.position.z += jz; m.scale.setScalar(0.3); scene.add(m); eggMs.push({ mesh: m, mat: m.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: m.position.x, restZ: m.position.z, settling: false, settleT: 0 }); }
+  // Auto egg transport: if researched and nursery exists, place egg directly in nursery
+  if (state.researchBonuses.autoEggTransport && state.chambers.nursery.count > 0) {
+    state.eggs++;
+    var nurseryX = TX - 5 - (state.chambers.nursery.count - 1) * 3.5;
+    var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4, emissive: 0xffcc66, emissiveIntensity: 0.3 }));
+    m.position.set(nurseryX + (Math.random() - 0.5) * 1.2, CCFY + 0.15, CZ + (Math.random() - 0.5) * 1.2);
+    m.scale.setScalar(0.3);
+    scene.add(m);
+    eggMs.push({ mesh: m, mat: m.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: m.position.x, restZ: m.position.z, settling: false, settleT: 0 });
+    qgLight.intensity = 4; qgSphere.material.emissiveIntensity = 2; pTH();
+    return;
+  }
+
+  // Normal egg laying
+  if (state.chambers.nursery.count > 0) {
+    var cf = createEggTransport();
+    if (!cf) {
+      state.eggs++;
+      var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
+      m.position.copy(qMesh.position); m.position.x += (Math.random() - 0.5) * 1.6; m.position.z += (Math.random() - 0.5) * 1.4;
+      m.scale.setScalar(0.3);
+      scene.add(m);
+      eggMs.push({ mesh: m, mat: m.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: m.position.x, restZ: m.position.z, settling: false, settleT: 0 });
+    }
+  } else {
+    state.eggs++;
+    var m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf5ecd6, roughness: 0.4 }));
+    var jx = (Math.random() - 0.5) * 1.6, jz = (Math.random() - 0.5) * 1.4;
+    m.position.copy(qMesh.position); m.position.x += jx; m.position.z += jz;
+    m.scale.setScalar(0.3);
+    scene.add(m);
+    eggMs.push({ mesh: m, mat: m.material, hatchTimer: state.hatchTime, totalHatchTime: state.hatchTime, restX: m.position.x, restZ: m.position.z, settling: false, settleT: 0 });
+  }
   qgLight.intensity = 4; qgSphere.material.emissiveIntensity = 2; pTH();
 }
 function spawnHatchSparkles(pos) { var g = new THREE.Group(); var m = new THREE.MeshStandardMaterial({ color: 0xffe9a8, emissive: 0xffcc66, emissiveIntensity: 1 }); for (var i = 0; i < 7; i++) { var s = new THREE.Mesh(new THREE.SphereGeometry(0.035, 5, 5), m); var a = (i / 7) * Math.PI * 2; s.userData = { dir: new THREE.Vector3(Math.cos(a), 1.2 + Math.random() * 0.6, Math.sin(a)) }; s.position.copy(pos); g.add(s); } scene.add(g); hatchFx.push({ group: g, life: 0, maxLife: 0.6 }); }
@@ -230,7 +261,6 @@ var AudioManager = {};
   AM.resume = function() {
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().then(function() {
-        // After resume, ensure music is playing if setting is on
         if (musicOn && musicNodes.length === 0) {
           AM.startMusic();
         }
@@ -238,7 +268,6 @@ var AudioManager = {};
     }
   };
 
-  // ---- SFX helpers ----
   AM.playTone = function(freq, dur, vol, type, rampDown) {
     if (!ctx || !sfxOn) return;
     var o = ctx.createOscillator(), g = ctx.createGain();
@@ -266,7 +295,6 @@ var AudioManager = {};
     notes.forEach(function(n, i) { setTimeout(function() { AM.playTone(n.freq, n.dur || 0.1, (vol || 0.1) * 0.7, n.type || 'sine'); }, i * (dur / notes.length) * 1000); });
   };
 
-  // ---- SFX library ----
   AM.sfx = {
     click: function() { AM.playTone(800, 0.05, 0.08, 'square'); },
     foodCollect: function() { AM.playTone(400, 0.08, 0.06, 'sine'); setTimeout(function() { AM.playTone(600, 0.08, 0.06, 'sine'); }, 40); },
@@ -289,7 +317,6 @@ var AudioManager = {};
     ascend: function() { AM.playArpeggio([{freq:523,dur:0.1},{freq:659,dur:0.1},{freq:784,dur:0.1},{freq:1047,dur:0.2},{freq:1318,dur:0.3}], 0.9, 0.12); }
   };
 
-  // ---- Ambient (unchanged) ----
   AM.startAmbient = function() {
     if (!ctx || !ambientOn || !ambientGain) return;
     if (ambientNode) { try { ambientNode.stop(); } catch(e) {} }
@@ -315,15 +342,14 @@ var AudioManager = {};
     }
   };
 
-  // ---- Background Music (with click‑free fade‑out) ----
   AM.startMusic = function() {
     if (!ctx || !musicOn) return;
     AM.stopMusic();
     var now = ctx.currentTime;
-    var baseFreq = 130.81; // C3
-    var chord = [1, 5/4, 3/2, 2]; // C major chord over two octaves
+    var baseFreq = 130.81;
+    var chord = [1, 5/4, 3/2, 2];
     var masterGain = ctx.createGain();
-    masterGain.gain.value = 0.12; // increased volume
+    masterGain.gain.value = 0.12;
     masterGain.connect(ctx.destination);
     chord.forEach(function(ratio, i) {
       var osc = ctx.createOscillator(); osc.type = 'sine';
@@ -366,11 +392,9 @@ var AudioManager = {};
     musicOn = on;
     localStorage.setItem('antEmpire_music', on ? '1' : '0');
     if (on) {
-      // If context is running, start immediately; otherwise it will start after resume
       if (ctx && ctx.state === 'running') {
         AM.startMusic();
       } else if (ctx) {
-        // Will start after resume
         AM.resume();
       }
     } else {
@@ -378,7 +402,6 @@ var AudioManager = {};
     }
   };
 
-  // ---- Settings toggles ----
   AM.setSfx = function(on) { sfxOn = on; localStorage.setItem('antEmpire_sfx', on ? '1' : '0'); };
   AM.setAmbient = function(on) {
     ambientOn = on; localStorage.setItem('antEmpire_ambient', on ? '1' : '0');
@@ -390,7 +413,6 @@ var AudioManager = {};
 document.addEventListener('click', function() { AudioManager.resume(); }, { once: true });
 document.addEventListener('touchstart', function() { AudioManager.resume(); }, { once: true });
 
-// Settings
 var GameSettings = {
   sfxOn: true, ambientOn: true, musicOn: true, shakeOn: true,
   init: function() {
