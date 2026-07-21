@@ -107,7 +107,12 @@ function updateWorker(w, dt) {
   else { var sgn = w.state === "TO_FOOD" ? 1 : -1; target = { x: raw.x, y: raw.y, z: raw.z + sgn * 0.5 + w.personalOffset }; }
   var p = w.mesh.position; var dx = target.x - p.x, dy = target.y - p.y, dz = target.z - p.z; var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
   if (dist < 0.15) { w.pathIndex++; if (w.pathIndex >= w.path.length) w.state = w.state === "TO_FOOD" ? "AT_FOOD" : "AT_NEST"; return; }
-  var step = Math.min(w.speed * dt, dist); p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step; w.mesh.rotation.y = Math.atan2(dx, dz); w.mesh.position.y += Math.sin(performance.now() / 90 + p.x * 5) * 0.008;
+  var step = Math.min(w.speed * dt, dist); p.x += (dx / dist) * step; p.y += (dy / dist) * step; p.z += (dz / dist) * step; w.mesh.rotation.y = Math.atan2(dx, dz);
+  // Subtle walking bounce + extra bounce when carrying food
+  w.mesh.position.y += Math.sin(performance.now() / 90 + p.x * 5) * 0.008;
+  if (w.carrying) {
+    w.mesh.position.y += Math.sin(performance.now() / 80) * 0.015;
+  }
   if (w.carrying && !w.foodIcon) { var ic = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0x553300, emissiveIntensity: 0.3 })); ic.position.set(0, 0.55, 0); w.mesh.add(ic); w.foodIcon = ic; }
   else if (!w.carrying && w.foodIcon && w.dropAnimTimer === undefined) { disposeMesh(w.foodIcon); w.mesh.remove(w.foodIcon); w.foodIcon = null; }
 }
@@ -261,7 +266,6 @@ var AudioManager = {};
   AM.resume = function() {
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().then(function() {
-        // After resume, ensure music is playing if setting is on
         if (musicOn && musicNodes.length === 0) {
           AM.startMusic();
         }
@@ -269,7 +273,6 @@ var AudioManager = {};
     }
   };
 
-  // ---- SFX helpers ----
   AM.playTone = function(freq, dur, vol, type, rampDown) {
     if (!ctx || !sfxOn) return;
     var o = ctx.createOscillator(), g = ctx.createGain();
@@ -297,7 +300,6 @@ var AudioManager = {};
     notes.forEach(function(n, i) { setTimeout(function() { AM.playTone(n.freq, n.dur || 0.1, (vol || 0.1) * 0.7, n.type || 'sine'); }, i * (dur / notes.length) * 1000); });
   };
 
-  // ---- SFX library ----
   AM.sfx = {
     click: function() { AM.playTone(800, 0.05, 0.08, 'square'); },
     foodCollect: function() { AM.playTone(400, 0.08, 0.06, 'sine'); setTimeout(function() { AM.playTone(600, 0.08, 0.06, 'sine'); }, 40); },
@@ -320,7 +322,6 @@ var AudioManager = {};
     ascend: function() { AM.playArpeggio([{freq:523,dur:0.1},{freq:659,dur:0.1},{freq:784,dur:0.1},{freq:1047,dur:0.2},{freq:1318,dur:0.3}], 0.9, 0.12); }
   };
 
-  // ---- Ambient (unchanged) ----
   AM.startAmbient = function() {
     if (!ctx || !ambientOn || !ambientGain) return;
     if (ambientNode) { try { ambientNode.stop(); } catch(e) {} }
@@ -346,15 +347,14 @@ var AudioManager = {};
     }
   };
 
-  // ---- Background Music (with click‑free fade‑out) ----
   AM.startMusic = function() {
     if (!ctx || !musicOn) return;
     AM.stopMusic();
     var now = ctx.currentTime;
-    var baseFreq = 130.81; // C3
-    var chord = [1, 5/4, 3/2, 2]; // C major chord over two octaves
+    var baseFreq = 130.81;
+    var chord = [1, 5/4, 3/2, 2];
     var masterGain = ctx.createGain();
-    masterGain.gain.value = 0.12; // increased volume
+    masterGain.gain.value = 0.12;
     masterGain.connect(ctx.destination);
     chord.forEach(function(ratio, i) {
       var osc = ctx.createOscillator(); osc.type = 'sine';
@@ -397,11 +397,9 @@ var AudioManager = {};
     musicOn = on;
     localStorage.setItem('antEmpire_music', on ? '1' : '0');
     if (on) {
-      // If context is running, start immediately; otherwise it will start after resume
       if (ctx && ctx.state === 'running') {
         AM.startMusic();
       } else if (ctx) {
-        // Will start after resume
         AM.resume();
       }
     } else {
@@ -409,7 +407,6 @@ var AudioManager = {};
     }
   };
 
-  // ---- Settings toggles ----
   AM.setSfx = function(on) { sfxOn = on; localStorage.setItem('antEmpire_sfx', on ? '1' : '0'); };
   AM.setAmbient = function(on) {
     ambientOn = on; localStorage.setItem('antEmpire_ambient', on ? '1' : '0');
