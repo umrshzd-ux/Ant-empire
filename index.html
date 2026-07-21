@@ -172,7 +172,7 @@ html, body {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   z-index: 11; display: none;
 }
-canvas { display: block; }
+canvas { display: block; width: 100%; height: 100%; }
 
 /* ============================================================
    HUD PILLS
@@ -970,6 +970,18 @@ window.onerror = function(msg, url, line) {
   return true;
 };
 
+// ===== VISUAL VIEWPORT RESIZE (fixes landscape half-screen issue) =====
+function handleViewportResize() {
+  if (typeof renderer === 'undefined' || typeof camera === 'undefined') return;
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', handleViewportResize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', handleViewportResize);
+}
+
 // Startup
 (function() {
   var ld = document.getElementById('loading');
@@ -1005,4 +1017,4 @@ window.onerror = function(msg, url, line) {
 })();
 </script>
 </body>
-   </html>
+     </html>
