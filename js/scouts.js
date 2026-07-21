@@ -138,16 +138,25 @@ function processScoutReturn(s) {
   // Explorer class bonus: double discovery chance
   if (s.antClass === "explorer") discoveryChance *= 2;
 
+  var discoveryMade = false;
+
   // First scout return: guaranteed discovery (Seed Cache)
   if (!_firstScoutReturned && typeof DISCOVERIES !== 'undefined' && DISCOVERIES.seedCache) {
     _firstScoutReturned = true;
     DISCOVERIES.seedCache.action(pos);
     showToast("🎉 First discovery! Seed Cache found! +food, +10 permanent food cap");
     AudioManager.sfx.achievement();
+    discoveryMade = true;
   } else if (Math.random() < discoveryChance) {
     if (typeof attemptDiscovery === 'function') {
       attemptDiscovery(pos);
+      discoveryMade = true;
     }
+  }
+
+  // Meadow Legend: +1 gem whenever a discovery is made
+  if (discoveryMade && state.gemUpgrades.legendaryMeadow) {
+    addGems(1);
   }
 
   // Deep Cartography: chance to claim unclaimed territory (5%)
@@ -191,6 +200,9 @@ function getEffectiveScoutSpeed() {
   if (state.prestigeUpgrades.ppSpeed) base *= 1 + state.prestigeUpgrades.ppSpeed * 0.1;
   if (state.ascensionUpgrades.goldenQueen > 0) base *= 2;
   if (state.researchBonuses && state.researchBonuses.scoutSpeed) base += state.researchBonuses.scoutSpeed;
+  // Legendary Riverside: +20% scout speed (handled in state.js getEffectiveScoutSpeed, which is called elsewhere,
+  // but this function is separate; we'll apply here as well for consistency)
+  if (state.gemUpgrades.legendaryRiverside) base *= 1.20;
   return base;
 }
 
