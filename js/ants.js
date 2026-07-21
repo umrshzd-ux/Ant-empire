@@ -45,7 +45,7 @@ function addLabel(parent, text, yOff, undergroundOnly) { var l = createLabelSpri
 
 var qMesh;
 function initQueen() { qMesh = buildAntMesh(queenScale, 0x8a4a1a); qMesh.position.set(TX, NP.y, CZ); scene.add(qMesh); addLabel(qMesh, "👑 Queen", 1.3, true); qMesh.userData = { idleTime: 0, isQueen: true }; }
-initQueen();
+// initQueen() call REMOVED – it will be called from main.js after scene is ready
 
 renderer.domElement.addEventListener('click', function(e) {
   if (!qMesh) return; var mouse = new THREE.Vector2(); mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
