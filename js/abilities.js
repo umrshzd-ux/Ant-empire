@@ -11,6 +11,7 @@ function activateRally() {
   applyAllWorkerSpeeds();
   updateDailyProgress('rally2', 1);
   checkAchievements();
+  triggerHaptic(15, 0.5);
 }
 
 function deactivateRally() {
