@@ -144,14 +144,44 @@ function processScoutReturn(s) {
     DISCOVERIES.seedCache.action(pos);
     showToast("🎉 First discovery! Seed Cache found! +food, +10 permanent food cap");
     AudioManager.sfx.achievement();
-    return;
-  }
-
-  if (Math.random() < discoveryChance) {
+  } else if (Math.random() < discoveryChance) {
     if (typeof attemptDiscovery === 'function') {
       attemptDiscovery(pos);
     }
   }
+
+  // Deep Cartography: chance to claim unclaimed territory (5%)
+  if (state.researchBonuses.deepCartography && Math.random() < 0.05) {
+    var unclaimedMarkers = [];
+    for (var i = 0; i < territoryMarkers.length; i++) {
+      if (!territoryMarkers[i].claimed) {
+        unclaimedMarkers.push(i);
+      }
+    }
+    if (unclaimedMarkers.length > 0) {
+      var randomIndex = unclaimedMarkers[Math.floor(Math.random() * unclaimedMarkers.length)];
+      claimTerritory(randomIndex);
+      showToast("🗺️ Deep Cartography: Scout claimed a new territory!");
+    }
+  }
+}
+
+// ---- Helper: claim territory by world position (used by deep cartography) ----
+function claimTerritoryByPosition(x, z) {
+  for (var i = 0; i < territoryMarkers.length; i++) {
+    var marker = territoryMarkers[i];
+    if (!marker.claimed) {
+      var dist = Math.sqrt(
+        Math.pow(marker.position.x - x, 2) + 
+        Math.pow(marker.position.z - z, 2)
+      );
+      if (dist < 1.5) {
+        claimTerritory(i);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 // ---- Get effective scout speed ----
@@ -180,4 +210,4 @@ function clearAllScouts() {
     }
   }
   scouts = [];
-        }
+    }
