@@ -30,7 +30,7 @@ var PATROL_POINTS = [
 
 var mound, rim, collar;
 
-// ===== TERRITORY MARKERS (new) =====
+// ===== TERRITORY MARKERS =====
 var territoryMarkers = [];  // { mesh, zoneId, claimed, position }
 
 function createTerritoryMarker(x, z, zoneId) {
@@ -74,35 +74,17 @@ function initTerritoryMarkers() {
   
   for (var z = 0; z < zones.length; z++) {
     var zoneId = zones[z];
-    // Generate 4 territory positions per zone (spread across the map)
     var baseX, baseZ;
     switch (zoneId) {
-      case "forest":
-        baseX = -5; baseZ = -5;
-        break;
-      case "meadow":
-        baseX = 8; baseZ = -2;
-        break;
-      case "forestEdge":
-        baseX = -12; baseZ = 4;
-        break;
-      case "riverside":
-        baseX = 2; baseZ = 10;
-        break;
-      case "deepWoods":
-        baseX = -8; baseZ = -10;
-        break;
-      case "cave":
-        baseX = 12; baseZ = 6;
-        break;
-      case "swamp":
-        baseX = -14; baseZ = 0;
-        break;
-      case "mountain":
-        baseX = 10; baseZ = -9;
-        break;
-      default:
-        baseX = 0; baseZ = 0;
+      case "forest": baseX = -5; baseZ = -5; break;
+      case "meadow": baseX = 8; baseZ = -2; break;
+      case "forestEdge": baseX = -12; baseZ = 4; break;
+      case "riverside": baseX = 2; baseZ = 10; break;
+      case "deepWoods": baseX = -8; baseZ = -10; break;
+      case "cave": baseX = 12; baseZ = 6; break;
+      case "swamp": baseX = -14; baseZ = 0; break;
+      case "mountain": baseX = 10; baseZ = -9; break;
+      default: baseX = 0; baseZ = 0;
     }
     for (var i = 0; i < 4; i++) {
       var offsetX = (i % 2 === 0 ? 2 : -2) + Math.random() * 1.5;
@@ -126,7 +108,6 @@ function initTerritoryMarkers() {
       if (marker.position.distanceTo(new THREE.Vector3(claim.pos.x, claim.pos.y, claim.pos.z)) < 1.5) {
         marker.claimed = true;
         marker.mesh.userData.claimed = true;
-        // Change flag colour to gold
         marker.mesh.children.forEach(function(child) {
           if (child.isMesh && child.material.color) {
             child.material.color.setHex(0xFFD700);
@@ -135,6 +116,50 @@ function initTerritoryMarkers() {
         break;
       }
     }
+  }
+}
+
+// ===== FIREFLIES (new) =====
+var fireflyParticles = [];
+
+function initFireflies() {
+  var fireflyMat = new THREE.MeshStandardMaterial({ color: 0xffff88, emissive: 0xffaa00, emissiveIntensity: 1.5, roughness: 0.2 });
+  for (var i = 0; i < 15; i++) {
+    var fly = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 4), fireflyMat);
+    fly.position.set(
+      (Math.random() - 0.5) * (SW - 6),
+      GTY + 0.3 + Math.random() * 1.5,
+      (Math.random() - 0.5) * (SD - 6)
+    );
+    fly.visible = false; // hidden until night
+    fly.userData = {
+      baseX: fly.position.x,
+      baseY: fly.position.y,
+      baseZ: fly.position.z,
+      speedX: (Math.random() - 0.5) * 0.3,
+      speedY: (Math.random() - 0.5) * 0.1,
+      speedZ: (Math.random() - 0.5) * 0.3,
+      phase: Math.random() * Math.PI * 2
+    };
+    scene.add(fly);
+    fireflyParticles.push(fly);
+  }
+}
+
+function updateFireflies(dt) {
+  for (var i = 0; i < fireflyParticles.length; i++) {
+    var fly = fireflyParticles[i];
+    if (!fly.visible) continue;
+    var ud = fly.userData;
+    fly.position.x += ud.speedX * dt;
+    fly.position.y += ud.speedY * dt + Math.sin(performance.now() / 1000 + ud.phase) * 0.005;
+    fly.position.z += ud.speedZ * dt;
+    // Bounce within bounds
+    if (Math.abs(fly.position.x - ud.baseX) > 3) ud.speedX *= -1;
+    if (fly.position.y > ud.baseY + 1.2 || fly.position.y < ud.baseY - 0.5) ud.speedY *= -1;
+    if (Math.abs(fly.position.z - ud.baseZ) > 3) ud.speedZ *= -1;
+    // Pulse glow
+    fly.material.emissiveIntensity = 1.5 + Math.sin(performance.now() / 300 + ud.phase) * 0.8;
   }
 }
 
@@ -274,8 +299,11 @@ function buildTerrain() {
     scene.add(m);
   }
 
-  // ===== TERRITORY MARKERS INIT (new) =====
+  // ===== TERRITORY MARKERS INIT =====
   initTerritoryMarkers();
+
+  // ===== FIREFLIES INIT =====
+  initFireflies();
 }
 
 // ===== MUSHROOMS (reduced to 3, NO lights) =====
@@ -390,4 +418,4 @@ function initFoodStations() {
     st.markerMesh = m;
     makeLabel("🌾 " + st.label, st.x, GTY + 2.2, st.z, 256, 64, false);
   }
-    }
+                                                                                                   }
