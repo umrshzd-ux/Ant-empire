@@ -603,10 +603,12 @@ canvas { display: block; }
     inset 0 2px 0 rgba(255,200,140,0.08);
   backdrop-filter: blur(8px);
   -webkit-overflow-scrolling: touch;
-  animation: panelSlideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  animation: panelBounceIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
 }
-@keyframes panelSlideUp {
-  0% { transform: translateX(-50%) translateY(25px); opacity: 0; }
+@keyframes panelBounceIn {
+  0% { transform: translateX(-50%) translateY(30px); opacity: 0; }
+  60% { transform: translateX(-50%) translateY(-4px); }
+  80% { transform: translateX(-50%) translateY(2px); }
   100% { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 .game-panel.open { display: flex; }
@@ -876,7 +878,7 @@ canvas { display: block; }
 <audio id="bg-music" loop style="display:none"></audio>
 
 <!-- ============================================================
-   SCRIPTS – EXACT DEPENDENCY ORDER (audio.js removed – all audio in ants.js)
+   SCRIPTS – EXACT DEPENDENCY ORDER (audio.js removed)
    ============================================================ -->
 <script src="js/three.min.js?v=final-2026"></script>
 <script src="js/config.js?v=final-2026"></script>
