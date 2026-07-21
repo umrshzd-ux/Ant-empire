@@ -5,7 +5,6 @@
 var BOSS_FIGHT_TIMEOUT = 45;               // seconds before forced resolution
 var BOSS_MILESTONES = [0.75, 0.5, 0.25];   // health-ratio callouts
 
-// Boss tier lookup for defeat penalties
 var BOSS_TIER = {
   queen:     1,
   beetle:    2,
@@ -19,9 +18,8 @@ var BOSS_DEFEAT_PENALTY_STEP = 0.05;
 var BOSS_DEFEAT_PENALTY_MAX  = 0.35;
 
 var _bossSpawning = false;
-var _firstBossSpawned = false; // for early warning
+var _firstBossSpawned = false;
 
-// ---- Spawn a boss ----
 function spawnBoss() {
   if (_bossSpawning) return;
   _bossSpawning = true;
@@ -56,14 +54,13 @@ function _doSpawnBoss() {
   var bossData = null;
   var bossKey = getBossTypeForZone();
 
-  // Check for legendary spawn
   if (state.prestigeCount >= BAL.legendaryPrestigeReq &&
       LEGENDARY_BOSSES[zoneId] &&
       state.legendaryDefeated.indexOf(zoneId) === -1 &&
       Math.random() < BAL.legendarySpawnChance) {
     isLegendary = true;
     bossData = LEGENDARY_BOSSES[zoneId];
-    bossKey = "legendary_" + zoneId; // unique key
+    bossKey = "legendary_" + zoneId;
   } else {
     bossData = BOSS_TYPES[bossKey];
   }
@@ -75,8 +72,7 @@ function _doSpawnBoss() {
   var bossHealth, bossDamage, bossSpeed;
 
   if (isLegendary) {
-    // Legendary stats: multiply base boss stats from config
-    var baseBossKey = getBossTypeForZone(); // get the normal boss for this zone to look up base stats
+    var baseBossKey = getBossTypeForZone();
     var baseBt = BOSS_TYPES[baseBossKey];
     bossHealth = Math.floor(BAL[baseBt.hpKey] * bt.hpMult * cfg.enemyMult);
     bossDamage = Math.floor(BAL[baseBt.dmgKey] * bt.dmgMult);
@@ -139,7 +135,6 @@ function _doSpawnBoss() {
   showToast((isLegendary ? "💎 Legendary " : "💀 ") + bt.name + " appeared!");
 }
 
-// ---- Build a boss 3D mesh ----
 function buildBossMesh(bt) {
   var bossMesh = new THREE.Group();
   var bodyMat = new THREE.MeshStandardMaterial({ color: bt.color, roughness: 0.2, metalness: 0.4 });
@@ -181,7 +176,6 @@ function buildBossMesh(bt) {
   return bossMesh;
 }
 
-// ---- Get boss type for current zone ----
 function getBossTypeForZone() {
   var available = [];
   for (var key in BOSS_TYPES) {
@@ -192,7 +186,6 @@ function getBossTypeForZone() {
   return available[Math.floor(Math.random() * available.length)];
 }
 
-// ---- Check boss health milestones ----
 function checkBossMilestones(boss) {
   var ratio = boss.health / boss.maxHealth;
   state._bossMilestonesHit = state._bossMilestonesHit || {};
@@ -206,7 +199,6 @@ function checkBossMilestones(boss) {
   }
 }
 
-// ---- Update boss each frame (including legendary specials) ----
 function updateBoss(dt) {
   if (!state.bossActive || !state.currentBoss) return;
   var boss = state.currentBoss;
@@ -217,7 +209,6 @@ function updateBoss(dt) {
   var hbFill = document.getElementById('boss-health-fill');
   if (hbFill) hbFill.style.width = Math.max(0, (boss.health / boss.maxHealth) * 100) + "%";
 
-  // Fight timeout
   if (soldiers.length > 0) {
     state.bossFightTimer = (state.bossFightTimer || 0) + dt;
     if (state.bossFightTimer > BOSS_FIGHT_TIMEOUT) {
@@ -226,7 +217,6 @@ function updateBoss(dt) {
     }
   }
 
-  // Unopposed boss retreat
   if (soldiers.length === 0) {
     var dtn = boss.mesh.position.distanceTo(ER);
     if (dtn < 1.5) {
@@ -328,7 +318,7 @@ function updateBoss(dt) {
         if (!boss._burrowed && boss._burrowTimer > 10) {
           boss._burrowed = true;
           boss._burrowTimer = 0;
-          boss.mesh.position.y = -5; // hide underground
+          boss.mesh.position.y = -5;
           showToast("🕳️ " + bt.name + " burrows underground!");
           setTimeout(function() {
             if (boss.mesh && soldiers.length > 0) {
@@ -343,14 +333,14 @@ function updateBoss(dt) {
 
       case "regenerate":
         if (boss.health < boss.maxHealth) {
-          boss.health += boss.maxHealth * 0.08 * dt; // stronger regen
+          boss.health += boss.maxHealth * 0.08 * dt;
           if (boss.health > boss.maxHealth) boss.health = boss.maxHealth;
         }
         break;
     }
   }
 
-  // Boss movement toward target
+  // Boss movement
   var p = boss.mesh.position;
   var dx = boss.target.x - p.x, dy = boss.target.y - p.y, dz = boss.target.z - p.z;
   var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -370,6 +360,8 @@ function updateBoss(dt) {
     for (var i = 0; i < soldiers.length; i++) {
       if (soldiers[i].mesh.position.distanceTo(p) < 2.5) {
         var dmg = boss.isLegendary ? Math.floor(getEffectiveSoldierMaxHealth() * 0.3) : BAL[bt.dmgKey];
+        // Legendary Mountain: -15% boss damage taken
+        if (state.gemUpgrades.legendaryMountain) dmg = Math.floor(dmg * 0.85);
         soldiers[i].health -= dmg;
         spawnDamageNumber(dmg, soldiers[i].mesh.position, "#ff0000");
         boss.attackCooldown = 2.0;
@@ -399,7 +391,6 @@ function updateBoss(dt) {
       if (s.damageMultiplier) sdmg *= s.damageMultiplier;
       if (state.prestigeUpgrades.ppBoss) sdmg = Math.floor(sdmg * (1 + state.prestigeUpgrades.ppBoss * 0.25));
       if (state.ascensionUpgrades.monarchMight > 0) sdmg = Math.floor(sdmg * 2);
-      // Phalanx bonus (already applied in combatUpdate, but not for bosses; we could add here if desired)
       boss.health -= sdmg;
       spawnDamageNumber(sdmg, p, "#ffaa00");
       s.attackCooldown = BAL.soldierAttackCD;
@@ -409,14 +400,12 @@ function updateBoss(dt) {
     }
   }
 
-  // Non-legendary regeneration (Hydra)
   if (!boss.isLegendary && boss.special === "regen" && boss.health < boss.maxHealth) {
     boss.health += boss.maxHealth * 0.05 * dt;
     if (boss.health > boss.maxHealth) boss.health = boss.maxHealth;
   }
 }
 
-// ---- Resolve boss fight outcome ----
 function resolveBossFight(outcome) {
   var boss = state.currentBoss;
   if (!boss) return;
@@ -487,7 +476,6 @@ function resolveBossFight(outcome) {
   checkAchievements();
 }
 
-// Summon boss via button
 function summonBoss() {
   if (state.bossActive) { showToast("Boss already active!"); return; }
   if (state.gems < BAL.summonCost) { showToast("Need " + BAL.summonCost + " 💎!"); return; }
@@ -497,7 +485,6 @@ function summonBoss() {
   showToast("💀 Boss summoned!");
 }
 
-// Reset first boss flag on prestige/ascension
 function resetFirstBossFlag() {
   _firstBossSpawned = false;
-             }
+}
