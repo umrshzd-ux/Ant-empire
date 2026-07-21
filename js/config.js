@@ -43,7 +43,10 @@ var BAL = {
   foodLowThreshold: 0.2,
   foodHighThreshold: 0.8,
   foodTensionMaxSlowdown: 0.5,
-  foodTensionHatchBoost: 0.2
+  foodTensionHatchBoost: 0.2,
+  // Legendary bosses
+  legendarySpawnChance: 0.05,
+  legendaryPrestigeReq: 5
 };
 
 var UPGRADES = {
@@ -79,8 +82,22 @@ var GEM_ITEMS = {
   weatherCharm:  { name: "Weather Charm",  desc: "End current rain/night",               cost: 10, category: "consumable", oneTime: false },
   rallyCharge:   { name: "Rally Charge",   desc: "Reset rally cooldown",                 cost: 12, category: "consumable", oneTime: false },
   luckyHour:     { name: "Lucky Hour",     desc: "Double rare ant chance (5 min)",       cost: 18, category: "consumable", oneTime: false },
-  defenseBanner: { name: "Defense Banner", desc: "Soldiers take 50% damage (3 min)",     cost: 25, category: "consumable", oneTime: false }
+  defenseBanner: { name: "Defense Banner", desc: "Soldiers take 50% damage (3 min)",     cost: 25, category: "consumable", oneTime: false },
+  // Legendary rewards (permanent – added via defeating legendary bosses)
+  legendaryForest:      { name: "Forest Legend",       desc: "+5% food production",               cost: 0, category: "legendary", oneTime: true },
+  legendaryMeadow:      { name: "Meadow Legend",       desc: "+1 gem from discoveries",           cost: 0, category: "legendary", oneTime: true },
+  legendaryForestEdge:  { name: "Forest Edge Legend",  desc: "Soldier damage +10%",               cost: 0, category: "legendary", oneTime: true },
+  legendaryRiverside:   { name: "Riverside Legend",    desc: "Scout speed +20%",                  cost: 0, category: "legendary", oneTime: true },
+  legendaryDeepWoods:   { name: "Deep Woods Legend",   desc: "+50 food capacity per territory",   cost: 0, category: "legendary", oneTime: true },
+  legendaryCave:        { name: "Cave Legend",         desc: "Soldier health +30",                cost: 0, category: "legendary", oneTime: true },
+  legendarySwamp:       { name: "Swamp Legend",        desc: "Egg lay time -10%",                 cost: 0, category: "legendary", oneTime: true },
+  legendaryMountain:    { name: "Mountain Legend",     desc: "Boss damage taken -15%",            cost: 0, category: "legendary", oneTime: true }
 };
+
+// Merge legendary rewards into GEM_ITEMS so buyGemItem can handle them (they are unlocked by boss defeat, not purchased)
+// We'll just keep them in GEM_ITEMS but they are only set true via code, not via shop.
+// They are not purchasable; their cost=0 prevents accidental purchase. 
+// The UI will show them in the shop as owned once obtained, but they won't be buyable.
 
 var DAILY_REWARDS = [
   { day: 1, gems: 1 }, { day: 2, gems: 1 }, { day: 3, gems: 2 }, { day: 4, gems: 2 },
@@ -283,6 +300,49 @@ var BOSS_TYPES = {
   centipede: { name: "Giant Centipede", icon: "🐛", hpKey: "bossHealthCentipede", dmgKey: "bossDamageCentipede", spdKey: "bossSpeedCentipede", color: 0x664422, legColor: 0x332211, zones: ["cave"], special: "poison" },
   hydra: { name: "Swamp Hydra", icon: "🐍", hpKey: "bossHealthHydra", dmgKey: "bossDamageHydra", spdKey: "bossSpeedHydra", color: 0x336633, legColor: 0x224422, zones: ["swamp"], special: "regen" },
   wyrm: { name: "Frost Wyrm", icon: "🐉", hpKey: "bossHealthWyrm", dmgKey: "bossDamageWyrm", spdKey: "bossSpeedWyrm", color: 0x88aaff, legColor: 0x4477aa, zones: ["mountain"], special: "freeze" }
+};
+
+var LEGENDARY_BOSSES = {
+  forest: {
+    name: "Ancient Ent Queen", icon: "🌳👑", hpMult: 3.0, dmgMult: 2.0, speedMult: 0.7,
+    color: 0x556B2F, legColor: 0x2E4A1E, special: "summonMinions",
+    rewardKey: "legendaryForest"
+  },
+  meadow: {
+    name: "Golden Hive Lord", icon: "🐝💛", hpMult: 2.5, dmgMult: 2.5, speedMult: 1.2,
+    color: 0xFFD700, legColor: 0xB8860B, special: "areaAttack",
+    rewardKey: "legendaryMeadow"
+  },
+  forestEdge: {
+    name: "Ironbark Titan", icon: "🪵💪", hpMult: 4.0, dmgMult: 1.8, speedMult: 0.5,
+    color: 0x4A3B2F, legColor: 0x2A1E15, special: "healSteal",
+    rewardKey: "legendaryForestEdge"
+  },
+  riverside: {
+    name: "Torrent Serpent", icon: "🐍💧", hpMult: 3.2, dmgMult: 2.2, speedMult: 1.0,
+    color: 0x4682B4, legColor: 0x2A5276, special: "areaAttack",
+    rewardKey: "legendaryRiverside"
+  },
+  deepWoods: {
+    name: "Shadow Stalker", icon: "🐺🌑", hpMult: 3.5, dmgMult: 2.8, speedMult: 1.3,
+    color: 0x1C1C1C, legColor: 0x0A0A0A, special: "burrow",
+    rewardKey: "legendaryDeepWoods"
+  },
+  cave: {
+    name: "Crystal Carapace", icon: "💎🕷️", hpMult: 4.5, dmgMult: 2.0, speedMult: 0.6,
+    color: 0xAA88FF, legColor: 0x6644AA, special: "freezeAura",
+    rewardKey: "legendaryCave"
+  },
+  swamp: {
+    name: "Plague Hydra", icon: "🐍☠️", hpMult: 3.8, dmgMult: 2.4, speedMult: 0.8,
+    color: 0x557744, legColor: 0x334422, special: "regenerate",
+    rewardKey: "legendarySwamp"
+  },
+  mountain: {
+    name: "Glacier Wyrm", icon: "🐉❄️", hpMult: 5.0, dmgMult: 3.0, speedMult: 0.9,
+    color: 0xCCEEFF, legColor: 0x7799BB, special: "freezeAura",
+    rewardKey: "legendaryMountain"
+  }
 };
 
 var EVOLUTION_TREE = {
