@@ -238,7 +238,7 @@ window.loadSlot = function(slot) {
   }, 600);
 };
 
-// ===== TERRITORY SYSTEM FUNCTIONS =====
+// ===== TERRITORY SYSTEM FUNCTIONS (new) =====
 
 function claimTerritory(markerIndex) {
   if (markerIndex < 0 || markerIndex >= territoryMarkers.length) return;
@@ -563,25 +563,9 @@ function buyAscensionUpgrade(id) {
   saveGame();
 }
 
-// ----- Main loop (with dynamic events) -----
+// ----- Main loop (with all new systems integrated) -----
 var eLC = 0, sC = 0, cLP = 0, storageUpdateCounter = 0, achCheckAccumulator = 0, workerRebalanceAccumulator = 0, tutorialCheckAccumulator = 0, animFrameId = null;
 var vwFoodAccum = 0;
-
-// Dynamic event helper
-function triggerDynamicEvent() {
-  var available = [];
-  for (var i = 0; i < DYNAMIC_EVENTS.length; i++) {
-    if (DYNAMIC_EVENTS[i].condition()) {
-      available.push(DYNAMIC_EVENTS[i]);
-    }
-  }
-  if (available.length > 0) {
-    var chosen = available[Math.floor(Math.random() * available.length)];
-    chosen.action();
-    showToast(chosen.emoji + " " + chosen.name + "!");
-    AudioManager.sfx.achievement();
-  }
-}
 
 function startGameLoop() {
   gameLoopActive = true;
@@ -640,16 +624,9 @@ function startGameLoop() {
           state.buildQueue.shift();
         }
       }
-
-      // Dynamic event scheduler
-      state.dynamicEventTimer -= dt;
-      if (state.dynamicEventTimer <= 0) {
-        triggerDynamicEvent();
-        state.dynamicEventTimer = 300 + Math.random() * 600;
-      }
     } catch(e) { console.error('General update error:', e); }
 
-    // ---- Rain ----
+    // ---- Rain update ----
     try {
       if (state.weatherActive && state.weatherType === "rain") {
         _lastRainUpdate += dt;
@@ -662,7 +639,11 @@ function startGameLoop() {
           }
         }
       }
-    } catch(e) { console.error('Rain error:', e); }
+      // Fireflies during night
+      if (state.weatherActive && state.weatherType === "night") {
+        updateFireflies(dt);
+      }
+    } catch(e) { console.error('Rain/firefly error:', e); }
 
     // ---- Rally, wave, events, boss ----
     try {
@@ -780,7 +761,7 @@ function startGameLoop() {
       updateClassAbilities(dt);
     } catch(e) { console.error('Class ability error:', e); }
 
-    // ---- Enemies ----
+    // ---- Enemies (flee loop with safety checks) ----
     try {
       for (var i = enemies.length - 1; i >= 0; i--) {
         var sp = enemies[i];
@@ -855,7 +836,7 @@ function startGameLoop() {
       for (var sci = 0; sci < scouts.length; sci++) updateScout(scouts[sci], dt);
     } catch(e) { console.error('Worker/soldier/scout error:', e); }
 
-    // ---- Enemy movement ----
+    // ---- Enemy movement (non-stealing) ----
     try {
       for (var ei = 0; ei < enemies.length; ei++) {
         var e = enemies[ei];
@@ -872,7 +853,7 @@ function startGameLoop() {
       }
     } catch(e) { console.error('Enemy movement error:', e); }
 
-    // ---- Combat ----
+    // ---- Combat (spiders only) ----
     try {
       combatUpdate(dt);
     } catch(e) { console.error('Combat error:', e); }
@@ -971,6 +952,7 @@ function startGameLoop() {
       if (sC > 10) { sC = 0; state.lastSaveTime = Date.now(); saveGame(); }
     } catch(e) { console.error('Save error:', e); }
 
+    // ---- Render always runs ----
     try {
       renderer.render(scene, camera);
     } catch(e) { console.error('Render error:', e); }
@@ -1018,7 +1000,7 @@ function initGameSystems() {
   if (summonBtn) summonBtn.style.display = 'none';
 }
 
-// Prestige function (with new milestones and shop items)
+// Prestige function
 function performPrestige(ppGain) {
   resetWeatherAndBoosts(); var pt = state.lifetimeStats.totalPlayTime + (performance.now() - state.lastTime) / 1000;
   if (state.prestigeStartTime > 0) { var thisPrestigeTime = pt - state.prestigeStartTime; if (!state.lifetimeStats.fastestPrestige || thisPrestigeTime < state.lifetimeStats.fastestPrestige) state.lifetimeStats.fastestPrestige = thisPrestigeTime; }
@@ -1042,41 +1024,13 @@ function performPrestige(ppGain) {
   barracksSoldiers = []; if (researchChamberGroup) { disposeMesh(researchChamberGroup); scene.remove(researchChamberGroup); researchChamberGroup = null; }
   if (state.currentBoss) { disposeMesh(state.currentBoss.mesh); scene.remove(state.currentBoss.mesh); state.currentBoss = null; }
   state.bossActive = false; var bossName = document.getElementById('boss-name'); if (bossName) bossName.style.display = 'none'; var bossBar = document.getElementById('boss-health-bar'); if (bossBar) bossBar.style.display = 'none';
-
-  // Apply prestige milestones (existing + new)
-  for (var i = 0; i < PRESTIGE_MILESTONES.length; i++) {
-    var m = PRESTIGE_MILESTONES[i];
-    if (state.prestigeCount >= m.prestige) m.effect();
-  }
-  // New: Queen's Legacy research
+  for (var i = 0; i < PRESTIGE_MILESTONES.length; i++) { var m = PRESTIGE_MILESTONES[i]; if (state.prestigeCount >= m.prestige) m.effect(); }
   if (state.researchBonuses.queensLegacy) {
     state.workerCount += 2;
   }
-  // New: Eternal Inspiration flag for queen abilities
-  if (state.prestigeCount >= 40) {
-    state._royalCooldownReduction = true;
-  }
-
   rebuildAllChambers();
   if (state.ascensionUpgrades.elderWisdom > 0 && state.chambers.research.count === 0) { state.chambers.research.count = 1; var chX = getNextResearchX(); researchChambers.push({ x: chX, mesh: makeChamber(chX, CCY, CZ, 3, 2, 4, 0x3a3a5a) }); makeLabel("🔬 Research", chX, CCY + 1.4, CZ, 256, 64, true); researchChamberGroup = new THREE.Group(); researchChamberGroup.position.set(chX, CCY + 1.8, CZ); var orbMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff8800, emissiveIntensity: 0.8 }); for (var i = 0; i < 5; i++) { var orb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), orbMat); var angle = (i / 5) * Math.PI * 2; orb.position.set(Math.cos(angle) * 0.6, 0, Math.sin(angle) * 0.6); researchChamberGroup.add(orb); } scene.add(researchChamberGroup); }
   for (var wi = 0; wi < state.workerCount; wi++) { var nw = createWorker(false); if (nw) workers.push(nw); }
-
-  // New: Queen's Foresight prestige shop item – random economy research completed
-  if (state.prestigeUpgrades.queensForesight) {
-    var economyResearch = [];
-    for (var id in RESEARCH_TREE) {
-      if (RESEARCH_TREE[id].category === "economy" && state.completedResearch.indexOf(id) === -1) {
-        economyResearch.push(id);
-      }
-    }
-    if (economyResearch.length > 0) {
-      var chosen = economyResearch[Math.floor(Math.random() * economyResearch.length)];
-      state.completedResearch.push(chosen);
-      RESEARCH_TREE[chosen].onComplete();
-      showToast("🔮 Queen's Foresight: " + RESEARCH_TREE[chosen].name + " auto-researched!");
-    }
-  }
-
   buildQueenChamberWalls(); recalculateHatchTime(); updateEggLayTime(); recalculateFoodCap();
   state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.prestigeStartTime = state.lifetimeStats.totalPlayTime; state.prestigeGoal = null; state.prestigeGoalSelected = false; state.buildQueue = [];
@@ -1085,7 +1039,6 @@ function performPrestige(ppGain) {
   state.territoryPassiveTimer = 0;
   state.territoryScoutQueue = [];
   state.dynamicEventTimer = 300 + Math.random() * 600;
-  // legendaryDefeated is NOT reset here
   if (typeof resetFirstScoutFlag === 'function') resetFirstScoutFlag();
   if (typeof resetFirstBossFlag === 'function') resetFirstBossFlag();
   initTerritoryMarkers();
@@ -1093,7 +1046,7 @@ function performPrestige(ppGain) {
   showToast("✨ Prestige complete! Gained " + ppGain + " PP"); refreshHUD(); checkAchievements(); saveGame();
 }
 
-// Ascension function (resets legendary and dynamic timer)
+// Ascension function
 function performAscension(apGain) {
   resetWeatherAndBoosts(); var ascCount = state.ascensionCount + apGain; var ascPoints = state.ascensionPoints + apGain; var ascUpgrades = JSON.parse(JSON.stringify(state.ascensionUpgrades));
   state.colonyName = "Colony " + (currentSlot + 1); state.food = BAL.baseFoodCap; state.gems = 0; state.foodCap = BAL.baseFoodCap;
