@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,7 +14,7 @@
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-  width: 100%; height: 100%; overflow: hidden;
+  width: 100vw; height: 100vh; overflow: hidden;
   background: #0a0502;
   font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
   touch-action: manipulation; user-select: none;
@@ -25,7 +25,7 @@ html, body {
    PARALLAX BACKGROUND LAYERS – REALISTIC CAVE (ENHANCED)
    ============================================================ */
 #bg-container {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; overflow: hidden;
 }
 .bg-layer { position: absolute; top: 0; left: 0; width: 120%; height: 120%; will-change: transform; }
 
@@ -118,7 +118,7 @@ html, body {
 
 /* God rays */
 #god-rays {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 7;
   background:
     radial-gradient(ellipse at 40% -10%, rgba(255,200,100,0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 60% -5%, rgba(255,220,120,0.1) 0%, transparent 45%),
@@ -132,7 +132,7 @@ html, body {
 }
 
 /* Dust particles */
-#dust-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 8; }
+#dust-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 8; }
 .dust {
   position: absolute; background: radial-gradient(circle, rgba(255,200,140,0.3) 0%, transparent 70%);
   border-radius: 50%; animation: dustDrift linear infinite;
@@ -147,13 +147,13 @@ html, body {
 
 /* Vignette */
 #vignette {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.75) 100%);
 }
 
 /* Cave glow */
 #cave-glow {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10;
   background:
     radial-gradient(circle at 50% 90%, rgba(255,160,50,0.15) 0%, transparent 50%),
     radial-gradient(circle at 30% 85%, rgba(255,140,40,0.08) 0%, transparent 30%),
@@ -166,10 +166,10 @@ html, body {
 }
 
 /* ============================================================
-   CANVAS – HIDDEN BY DEFAULT
+   CANVAS – FIXED FULLSCREEN
    ============================================================ */
 #canvas-container {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   z-index: 11; display: none;
 }
 canvas { display: block; }
@@ -300,7 +300,7 @@ canvas { display: block; }
    LOADING SCREEN
    ============================================================ */
 #loading {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 200;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 200;
   background: radial-gradient(ellipse at 50% 25%, #3a2010 0%, #0a0502 80%);
   color: #f3e3c4; display: flex; flex-direction: column; align-items: center; justify-content: center;
   font-size: 15px; gap: 14px;
@@ -321,7 +321,7 @@ canvas { display: block; }
    MAIN MENU – PREMIUM 2026 REDESIGN
    ============================================================ */
 #main-menu {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 60;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 60;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   color: #f3e3c4; gap: 20px; padding: 60px 20px 40px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -516,7 +516,7 @@ canvas { display: block; }
    MODAL OVERLAYS – PREMIUM POPUPS
    ============================================================ */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 80;
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 80;
   background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center;
   backdrop-filter: blur(6px);
 }
@@ -1003,4 +1003,4 @@ window.onerror = function(msg, url, line) {
 })();
 </script>
 </body>
-   </html>
+                                                                                    </html>
