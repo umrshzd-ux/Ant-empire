@@ -78,7 +78,7 @@ var state = {
   evolution: { worker: 0, soldier: 0, scout: 0 },
   bossActive: false, bossTimer: 0, bossHealth: 0, bossMaxHealth: 0, currentBoss: null, bossKills: 0, bossType: null,
   prestigeCount: 0, prestigePoints: 0,
-  prestigeUpgrades: { ppFood: 0, ppSpeed: 0, ppHatch: 0, ppCap: 0, ppGem: 0, ppBoss: 0 },
+  prestigeUpgrades: { ppFood: 0, ppSpeed: 0, ppHatch: 0, ppCap: 0, ppGem: 0, ppBoss: 0, queensForesight: 0, legacyVault: 0 },
   prestigeFoodBonus: 0,
   currentZone: "forest", unlockedZonesList: ["forest"], workerRebalanceTimer: 300,
   preWeatherZone: null, preWeatherBg: null, preWeatherFog: null,
@@ -140,7 +140,12 @@ var state = {
   legendaryDefeated: [],
 
   // Dynamic events
-  dynamicEventTimer: 300   // seconds until next dynamic event
+  dynamicEventTimer: 300,
+
+  // Prestige rework flags
+  _royalCooldownReduction: false,
+  _pendingTerritoryClaim: false,
+  _pendingLegacyScout: false
 };
 var queenScale = BAL.queenBaseScale;
 state.lastTime = performance.now();
@@ -183,7 +188,7 @@ function resetStateToDefault(slot) {
   state.bossActive = false; state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   state.bossHealth = 0; state.bossMaxHealth = 0; state.currentBoss = null; state.bossKills = 0; state.bossType = null;
   state.prestigeCount = 0; state.prestigePoints = 0;
-  state.prestigeUpgrades = { ppFood: 0, ppSpeed: 0, ppHatch: 0, ppCap: 0, ppGem: 0, ppBoss: 0 };
+  state.prestigeUpgrades = { ppFood: 0, ppSpeed: 0, ppHatch: 0, ppCap: 0, ppGem: 0, ppBoss: 0, queensForesight: 0, legacyVault: 0 };
   state.prestigeFoodBonus = 0;
   state.currentZone = "forest"; state.unlockedZonesList = ["forest"];
   state.preWeatherZone = null; state.preWeatherBg = null; state.preWeatherFog = null;
@@ -232,6 +237,10 @@ function resetStateToDefault(slot) {
   // Legendary kept across prestiges
   // Dynamic events timer reset
   state.dynamicEventTimer = 300 + Math.random() * 600;
+  // Prestige rework flags reset (except _royalCooldownReduction which is kept via prestige milestone)
+  state._royalCooldownReduction = false;
+  state._pendingTerritoryClaim = false;
+  state._pendingLegacyScout = false;
   recalculateHatchTime();
   updateEggLayTime();
   recalculateFoodCap();
@@ -287,6 +296,8 @@ function recalculateFoodCap() {
     if (state.gemUpgrades.legendaryDeepWoods) terrCapBonus += state.territoriesClaimed.length * 50;
     state.foodCap += terrCapBonus;
   }
+  // Legacy Vault prestige upgrade
+  if (state.prestigeUpgrades.legacyVault) state.foodCap += 200;
 }
 function getUpgradeCost(type) {
   var upg = UPGRADES[type];
@@ -423,7 +434,16 @@ function loadGameData(data) {
   if (data.lastLoginDay !== undefined) state.lastLoginDay = data.lastLoginDay;
   if (data.lastSaveTime) state.lastSaveTime = data.lastSaveTime;
   if (data.evolution) state.evolution = data.evolution;
-  if (data.prestigeUpgrades) state.prestigeUpgrades = data.prestigeUpgrades;
+  if (data.prestigeUpgrades) {
+    // Ensure new keys exist
+    var defaultPU = { ppFood: 0, ppSpeed: 0, ppHatch: 0, ppCap: 0, ppGem: 0, ppBoss: 0, queensForesight: 0, legacyVault: 0 };
+    for (var k in defaultPU) {
+      if (data.prestigeUpgrades[k] !== undefined) {
+        defaultPU[k] = data.prestigeUpgrades[k];
+      }
+    }
+    state.prestigeUpgrades = defaultPU;
+  }
   if (data.currentZone) state.currentZone = data.currentZone;
   if (data.unlockedZonesList) state.unlockedZonesList = data.unlockedZonesList;
   if (data.bossTimer !== undefined) state.bossTimer = data.bossTimer;
@@ -487,6 +507,10 @@ function loadGameData(data) {
   if (data.legendaryDefeated) state.legendaryDefeated = data.legendaryDefeated;
   // Dynamic event timer
   if (data.dynamicEventTimer !== undefined) state.dynamicEventTimer = data.dynamicEventTimer;
+  // Prestige rework flags
+  if (data._royalCooldownReduction !== undefined) state._royalCooldownReduction = data._royalCooldownReduction;
+  if (data._pendingTerritoryClaim !== undefined) state._pendingTerritoryClaim = data._pendingTerritoryClaim;
+  if (data._pendingLegacyScout !== undefined) state._pendingLegacyScout = data._pendingLegacyScout;
   state.xpToNext = Math.floor(40 * Math.pow(1.15, state.level - 1));
   recalculateHatchTime();
   updateEggLayTime();
@@ -512,4 +536,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-    }
+  }
