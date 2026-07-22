@@ -958,7 +958,7 @@ function initGameSystems() {
   var savedZone = ZONE_CONFIG[state.currentZone];
   if (savedZone) { scene.background = new THREE.Color(savedZone.bg); scene.fog = new THREE.Fog(savedZone.fog, 20, 80); }
   document.getElementById('zone-display').textContent = ZONE_CONFIG[state.currentZone] ? ZONE_CONFIG[state.currentZone].label : '🌳Forest';
-  checkDailyReset(); setupButtons(); updateWaveTimer(); updateEventTimer(); updateBossTimer(); updateStreakDisplay();
+  checkDailyReset(); setupButtons(); setupGameListeners(); updateWaveTimer(); updateEventTimer(); updateBossTimer(); updateStreakDisplay();
   refreshAchievementsUI(); refreshPrestigeShopUI(); refreshEvolutionUI(); refreshHUD(); refreshDailyUI(); refreshStatsUI(); refreshRoadmapUI();
   if (typeof initGoals === 'function') initGoals();
   if (typeof initRoyalChamber === 'function') initRoyalChamber();
