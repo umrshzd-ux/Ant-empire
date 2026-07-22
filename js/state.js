@@ -150,6 +150,7 @@ var state = {
 var queenScale = BAL.queenBaseScale;
 state.lastTime = performance.now();
 state.lastSaveTime = Date.now();
+// Ensure foodCap is never stuck at a low value (legacy saves may have 30)
 state.foodCap = BAL.baseFoodCap;
 state.eggLayTime = BAL.baseEggLayTime;
 state.surgeTimer = BAL.surgeIntervalMin + Math.random() * (BAL.surgeIntervalMax - BAL.surgeIntervalMin);
@@ -286,6 +287,7 @@ function updateEggLayTime() {
   state.eggLayTime = Math.max(2, baseTime + extra * BAL.eggLayTimePerWorker - state.upgrades.eggLayTime * UPGRADES.eggLayTime.effect - blessing);
 }
 function recalculateFoodCap() {
+  // Start from the base defined in BAL
   state.foodCap = BAL.baseFoodCap + state.chambers.foodStorage.bonusCap + state.upgrades.foodCap * UPGRADES.foodCap.effect + (state.level - 1) * 25 + (state.prestigeUpgrades.ppCap || 0) * 50;
   if (state.gemUpgrades.deepStorage) state.foodCap += 300;
   if (state.researchBonuses && state.researchBonuses.foodCap) state.foodCap += state.researchBonuses.foodCap;
@@ -512,6 +514,7 @@ function loadGameData(data) {
   if (data._pendingTerritoryClaim !== undefined) state._pendingTerritoryClaim = data._pendingTerritoryClaim;
   if (data._pendingLegacyScout !== undefined) state._pendingLegacyScout = data._pendingLegacyScout;
   state.xpToNext = Math.floor(40 * Math.pow(1.15, state.level - 1));
+  // Force recalculate food cap to fix stuck at 30 from legacy saves
   recalculateHatchTime();
   updateEggLayTime();
   recalculateFoodCap();
@@ -536,4 +539,4 @@ function addGems(amount) {
   state.totalGemsEarned += amount;
   state.lifetimeStats.totalGems = (state.lifetimeStats.totalGems || 0) + amount;
   showToast("+" + amount + "💎");
-  }
+                  }
