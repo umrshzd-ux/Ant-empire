@@ -806,9 +806,11 @@ function refreshTerritoriesUI() {
 }
 
 // =============================================
-//  BUTTON SETUP (updated with territory button)
+//  BUTTON SETUP (UPDATED – CALLS initDOMRefs FIRST)
 // =============================================
 function setupButtons() {
+  initDOMRefs();  // <-- CRITICAL: populates all global DOM variables
+
   buildPanel = document.getElementById("build-panel"); upgradePanel = document.getElementById("upgrade-panel"); shopPanel = document.getElementById("shop-panel");
   achPanel = document.getElementById("achievements-panel"); evoPanel = document.getElementById("evolution-panel"); ppPanel = document.getElementById("prestige-shop-panel");
   ascPanel = document.getElementById("ascension-shop-panel"); researchPanel = document.getElementById("research-panel");
