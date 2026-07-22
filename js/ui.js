@@ -6,6 +6,8 @@ var elMorePanel;
 var toastEl, floatersEl;
 var buildPanel, upgradePanel, shopPanel, achPanel, evoPanel, ppPanel, ascPanel, researchPanel;
 var surgeBtn, eventBtn, summonBtn, rallyBtn, rallyOverlay;
+var currentViewPreset = 0;
+var viewPresetNames = ["overhead", "tactical", "surface", "nest", "queen", "orbit"];
 
 function initDOMRefs() {
   elFood = document.getElementById("food-count");
@@ -826,6 +828,16 @@ function setupButtons() {
   var btnSurface = document.getElementById("btn-surface"); if (btnSurface) btnSurface.onclick = function() { flyToPreset("surface"); };
   var btnTunnel = document.getElementById("btn-tunnel"); if (btnTunnel) btnTunnel.onclick = function() { flyToPreset("tunnel"); };
   var btnOrbit = document.getElementById("btn-orbit"); if (btnOrbit) btnOrbit.onclick = function() { flyToPreset("orbit"); };
+
+  // View button cycles through camera presets
+  var btnView = document.getElementById("btn-view");
+  if (btnView) {
+    btnView.onclick = function() {
+      AudioManager.sfx.buttonClick();
+      currentViewPreset = (currentViewPreset + 1) % viewPresetNames.length;
+      flyToPreset(viewPresetNames[currentViewPreset]);
+    };
+  }
 
   var zonePill = document.getElementById("zone-pill"); if (zonePill) zonePill.onclick = function() { AudioManager.sfx.buttonClick(); var zones = state.unlockedZonesList; if (zones.length <= 1) { showToast("Explore more to unlock new zones!"); return; } var idx = zones.indexOf(state.currentZone); var nextIdx = (idx + 1) % zones.length; switchZone(zones[nextIdx]); };
   var btnMenu = document.getElementById("btn-menu-ingame"); if (btnMenu) btnMenu.onclick = function() { AudioManager.sfx.buttonClick(); showMainMenu(); };
