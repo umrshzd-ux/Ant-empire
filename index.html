@@ -175,86 +175,87 @@ html, body {
 canvas { display: block; width: 100%; height: 100%; }
 
 /* ============================================================
-   HUD PILLS
+   HUD PILLS – REDESIGNED FOR MOBILE (PREMIUM LOOK)
    ============================================================ */
 #hud {
   position: absolute; top: 0; left: 0; right: 0; display: flex;
-  justify-content: space-between; align-items: flex-start; padding: 8px 10px;
+  justify-content: space-between; align-items: flex-start; padding: 12px 16px;
   pointer-events: none; z-index: 20;
 }
 .resource-pill {
-  display: flex; align-items: center; gap: 5px;
-  background: linear-gradient(180deg, rgba(45,28,14,0.9), rgba(18,10,4,0.9));
-  border: 1px solid rgba(200,150,80,0.35);
-  border-radius: 20px; padding: 5px 12px 5px 7px;
-  color: #f3e3c4; font-size: 12px; font-weight: 700;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 8px rgba(180,120,50,0.12), inset 0 1px 0 rgba(255,200,140,0.1);
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, rgba(60,35,18,0.95), rgba(25,12,6,0.95));
+  border: 1px solid rgba(200,150,80,0.5);
+  border-radius: 28px; padding: 8px 18px 8px 10px;
+  color: #f3e3c4; font-size: 14px; font-weight: 700;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.6), 0 0 10px rgba(180,120,50,0.15), inset 0 1px 0 rgba(255,200,140,0.2);
+  min-width: 72px; justify-content: center;
 }
-.resource-pill.clickable { cursor: pointer; pointer-events: auto; border-color: rgba(255,200,100,0.55); box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 10px rgba(255,180,80,0.2), inset 0 1px 0 rgba(255,200,140,0.15); }
+.resource-pill.clickable { cursor: pointer; pointer-events: auto; border-color: rgba(255,200,100,0.7); box-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 0 14px rgba(255,180,80,0.3), inset 0 1px 0 rgba(255,200,140,0.25); }
 .resource-pill.clickable:active { transform: scale(0.95); }
-.resource-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+.resource-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5); }
 .icon-food { background: linear-gradient(135deg, #d6a85a, #a87830); }
 .icon-gem { background: linear-gradient(135deg, #e040fb, #9020c0); }
 .icon-alert { background: #aa3333; }
-#top-left, #top-right { display: flex; flex-direction: column; gap: 4px; }
+#top-left, #top-right { display: flex; flex-direction: column; gap: 8px; }
 
 /* ============================================================
    ALERTS & RESOURCES DROPDOWNS
    ============================================================ */
 #alerts-panel, #resources-panel {
   position: absolute; z-index: 40;
-  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  background: linear-gradient(160deg, rgba(35,20,10,0.98), rgba(15,8,3,0.98));
   border: 2px solid rgba(200,150,80,0.6);
-  border-radius: 16px; padding: 12px; display: none; flex-direction: column; gap: 6px;
-  min-width: 200px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
-  backdrop-filter: blur(8px);
+  border-radius: 20px; padding: 14px; display: none; flex-direction: column; gap: 8px;
+  min-width: 210px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.25);
+  backdrop-filter: blur(10px);
 }
-#alerts-panel { top: 120px; left: 8px; }
-#resources-panel { top: 120px; right: 8px; }
+#alerts-panel { top: 130px; left: 8px; }
+#resources-panel { top: 130px; right: 8px; }
 #alerts-panel .alert-item, #resources-panel .resource-row {
-  font-size: 13px; color: #f3e3c4; padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 14px; color: #f3e3c4; padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 #resources-panel .resource-row { display: flex; justify-content: space-between; }
 .panel-close-btn {
   align-self: flex-end;
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color:#fff;
-  border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 14px; line-height: 1;
+  border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; line-height: 1;
 }
 
 /* ============================================================
-   BOTTOM BAR
+   BOTTOM BAR – PROFESSIONAL & SPACIOUS
    ============================================================ */
 #bottom-bar {
   position: absolute; bottom: 0; left: 0; right: 0; display: flex;
-  justify-content: center; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  justify-content: center; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   pointer-events: none; z-index: 20; flex-wrap: wrap;
 }
 .cam-btn, .build-btn, .rally-btn, .menu-btn-sm {
   pointer-events: auto;
-  background: linear-gradient(180deg, rgba(60,35,18,0.92), rgba(22,12,5,0.92));
-  border: 1px solid rgba(200,150,80,0.5);
-  color: #f3e3c4; border-radius: 14px; padding: 8px 12px; font-size: 12px; font-weight: 700;
-  text-align: center; min-width: 44px; cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.15);
+  background: linear-gradient(180deg, rgba(70,40,20,0.95), rgba(30,15,8,0.95));
+  border: 1px solid rgba(200,150,80,0.6);
+  color: #f3e3c4; border-radius: 20px; padding: 10px 16px; font-size: 14px; font-weight: 700;
+  text-align: center; min-width: 56px; cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,140,0.2);
   transition: transform 0.1s, box-shadow 0.1s;
   display: inline-block;
 }
 .cam-btn:active, .build-btn:active, .rally-btn:active, .menu-btn-sm:active {
-  transform: scale(0.92); box-shadow: 0 1px 4px rgba(0,0,0,0.6), inset 0 2px 5px rgba(0,0,0,0.3);
+  transform: scale(0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 2px 6px rgba(0,0,0,0.4);
 }
 .rally-btn .cooldown-overlay { pointer-events: none; }
 
-/* "More" panel */
+/* "More" panel – polished pop‑over */
 #more-panel {
-  position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 30;
-  background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
+  position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 30;
+  background: linear-gradient(160deg, rgba(40,22,12,0.98), rgba(18,9,4,0.98));
   border: 2px solid rgba(200,150,80,0.6);
-  border-radius: 16px; padding: 10px; display: none; gap: 6px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(200,140,60,0.2);
-  backdrop-filter: blur(8px);
+  border-radius: 22px; padding: 14px; display: none; gap: 10px;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.8), 0 0 18px rgba(200,140,60,0.25);
+  backdrop-filter: blur(12px);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -263,8 +264,8 @@ canvas { display: block; width: 100%; height: 100%; }
    SURGE / EVENT / SUMMON BUTTONS
    ============================================================ */
 #surge-btn, #event-btn, #summon-btn {
-  position: absolute; left: 50%; transform: translateX(-50%); padding: 12px 22px; border-radius: 22px;
-  font-size: 15px; font-weight: 700; z-index: 25; pointer-events: auto; display: none; cursor: pointer;
+  position: absolute; left: 50%; transform: translateX(-50%); padding: 14px 26px; border-radius: 26px;
+  font-size: 16px; font-weight: 700; z-index: 25; pointer-events: auto; display: none; cursor: pointer;
 }
 #surge-btn {
   top: 100px; background: linear-gradient(180deg, rgba(255,170,50,0.95), rgba(200,120,20,0.95));
@@ -590,12 +591,12 @@ canvas { display: block; width: 100%; height: 100%; }
    BOTTOM GAME PANELS (build, upgrade, shop, etc.)
    ============================================================ */
 .game-panel {
-  position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
   background: linear-gradient(160deg, rgba(35,20,10,0.97), rgba(15,8,3,0.97));
   border: 2px solid rgba(200,150,80,0.6);
-  border-radius: 20px; padding: 16px; z-index: 30;
-  display: none; flex-direction: column; gap: 10px;
-  min-width: 280px; max-height: 58vh; overflow-y: auto;
+  border-radius: 24px; padding: 18px; z-index: 30;
+  display: none; flex-direction: column; gap: 12px;
+  min-width: 300px; max-height: 55vh; overflow-y: auto;
   box-shadow:
     0 20px 45px rgba(0,0,0,0.75),
     0 0 24px rgba(200,140,60,0.18),
@@ -619,8 +620,8 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 .panel-option button {
   background: linear-gradient(180deg, #e0b15a, #b07830);
-  border: none; color: #1c1005; border-radius: 10px; padding: 8px 16px;
-  font-weight: 800; cursor: pointer; font-size: 13px;
+  border: none; color: #1c1005; border-radius: 12px; padding: 10px 18px;
+  font-weight: 800; cursor: pointer; font-size: 14px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,160,0.3);
   transition: all 0.1s;
 }
@@ -634,9 +635,9 @@ canvas { display: block; width: 100%; height: 100%; }
 #floaters { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; }
 .floater { position: absolute; color: #ffe9a8; font-weight: 800; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); animation: floatUp 1.0s ease-out forwards; }
 @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-44px); opacity: 0; } }
-#toast { position: absolute; top: 75px; left: 50%; transform: translateX(-50%); background: rgba(30,18,8,0.95); border: 1px solid rgba(200,150,80,0.6); color: #f3e3c4; padding: 10px 24px; border-radius: 14px; font-size: 15px; font-weight: 700; z-index: 35; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+#toast { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); background: rgba(30,18,8,0.95); border: 1px solid rgba(200,150,80,0.6); color: #f3e3c4; padding: 12px 28px; border-radius: 16px; font-size: 16px; font-weight: 700; z-index: 35; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; white-space: nowrap; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
 #achievement-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(20,10,0,0.96); border: 2px solid #ffd27a; color: #ffd27a; padding: 18px 26px; border-radius: 18px; font-size: 16px; font-weight: 800; z-index: 90; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.4s ease; display: flex; flex-direction: column; align-items: center; gap: 6px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255,200,100,0.3); }
-#tutorial-toast { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: rgba(20,10,0,0.94); border: 2px solid #ffaa33; color: #ffd27a; padding: 14px 22px; border-radius: 16px; font-size: 15px; font-weight: 700; z-index: 35; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.5s ease; max-width: 280px; box-shadow: 0 14px 32px rgba(0,0,0,0.6); }
+#tutorial-toast { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); background: rgba(20,10,0,0.94); border: 2px solid #ffaa33; color: #ffd27a; padding: 14px 22px; border-radius: 16px; font-size: 15px; font-weight: 700; z-index: 35; pointer-events: none; text-align: center; opacity: 0; transition: opacity 0.5s ease; max-width: 280px; box-shadow: 0 14px 32px rgba(0,0,0,0.6); }
 
 /* ============================================================
    SHOP CATEGORY TABS
@@ -1017,4 +1018,4 @@ if (window.visualViewport) {
 })();
 </script>
 </body>
-                               </html>
+   </html>
