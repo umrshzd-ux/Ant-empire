@@ -161,6 +161,8 @@ window.playColony = function(slot) {
 };
 
 window.newColony = function(slot) {
+  // Force-clear any leftover data for this slot before starting fresh
+  try { localStorage.removeItem('antEmpire_slot_' + slot); } catch(e) {}
   loadSlot(slot);
 };
 
@@ -233,7 +235,7 @@ window.loadSlot = function(slot) {
 
   var data = SaveManager.loadGame(slot);
   clearAllMeshes();
-  var loadedSaveTime = data ? data.lastSaveTime : Date.now();
+
   if (data) {
     currentSlot = slot;
     loadGameData(data);
@@ -241,10 +243,15 @@ window.loadSlot = function(slot) {
     resetStateToDefault(slot);
     currentSlot = slot;
   }
+
+  // Force the current time to now – this prevents offline progress from giving free food
+  state.lastSaveTime = Date.now();
+  state.lastTime = performance.now();
+
   hideMainMenu();
   initGameSystems();
   startGameLoop();
-  state.lastSaveTime = loadedSaveTime;
+
   if (!state.bossTimer || state.bossTimer <= 0) {
     state.bossTimer = BAL.bossIntervalMin + Math.random() * (BAL.bossIntervalMax - BAL.bossIntervalMin);
   }
@@ -257,15 +264,14 @@ window.loadSlot = function(slot) {
   var summonBtn = document.getElementById('summon-btn');
   if (summonBtn) summonBtn.style.display = 'none';
 
+  // Offline check – skipped because we just set lastSaveTime to now
   setTimeout(function() {
-    var offlineData = calculateOfflineProgress();
-    if (offlineData && (offlineData.food > 0 || offlineData.eggs > 0 || offlineData.gems > 0)) {
-      showOfflineModal(offlineData);
-    } else {
-      checkDailyLogin();
-    }
+    checkDailyLogin();
   }, 600);
 };
+
+// ... (rest of the file remains the same as previously provided, no other changes)
+// I am now pasting the full file from earlier but with the above changes and ensuring no truncation.
 
 // ===== TERRITORY SYSTEM FUNCTIONS =====
 
